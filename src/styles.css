@@ -1,0 +1,235 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --bar-bg: #f6f8fa;
+  --bar-fg: #59636e;
+  --border: #d1d9e0;
+  --hover: #eaeef2;
+  --editor-font-size: 16px;
+  --source-font-size: 15px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --fg: #e6edf3;
+  --bar-bg: #1f1f1f;
+  --bar-fg: #9198a1;
+  --border: #2f2f2f;
+  --hover: #2a2a2a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+#titlebar {
+  flex: none;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px 0 14px;
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#doc-title {
+  font-size: 13px;
+  color: var(--bar-fg);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#actions { display: flex; gap: 2px; flex: none; }
+#actions button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bar-fg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+#actions button svg { width: 18px; height: 18px; display: block; }
+#actions button:hover { background: var(--hover); color: var(--fg); }
+#actions button:active { background: var(--border); }
+#actions button.active { background: var(--hover); color: var(--fg); }
+#actions button:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+#actions .sep {
+  width: 1px;
+  align-self: center;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--border);
+}
+
+#tabs {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px 6px 0;
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+#tabs .tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 200px;
+  padding: 5px 6px 5px 10px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  font-size: 12px;
+  color: var(--bar-fg);
+  cursor: pointer;
+  white-space: nowrap;
+}
+#tabs .tab:hover { background: var(--hover); }
+#tabs .tab.active {
+  background: var(--bg);
+  color: var(--fg);
+  border-color: var(--border);
+}
+#tabs .tab-name { overflow: hidden; text-overflow: ellipsis; }
+#tabs .tab.dirty .tab-name::before {
+  content: "•";
+  margin-right: 4px;
+  color: var(--fg);
+}
+#tabs .tab-close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.5;
+}
+#tabs .tab:hover .tab-close,
+#tabs .tab.active .tab-close { opacity: 1; }
+#tabs .tab-close:hover { background: var(--border); }
+#tab-add {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--bar-fg);
+  font-size: 16px;
+  width: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  align-self: center;
+}
+#tab-add:hover { background: var(--hover); color: var(--fg); }
+
+#editor { flex: 1; overflow: auto; min-height: 0; }
+#editor .milkdown {
+  height: 100%;
+  --crepe-base-font-size: var(--editor-font-size, 16px);
+  --crepe-font-default: var(--editor-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  --crepe-font-title: var(--editor-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  --crepe-color-primary: var(--accent, #4a7dff);
+}
+
+/* Code stays left-to-right even when the document is RTL. */
+[dir="rtl"] .milkdown-code-block,
+[dir="rtl"] .cm-editor,
+[dir="rtl"] pre,
+[dir="rtl"] pre code {
+  direction: ltr;
+  text-align: left;
+}
+
+#source {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  outline: none;
+  resize: none;
+  padding: 28px max(28px, 50% - 400px);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--source-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace);
+  font-size: var(--source-font-size, 15px);
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+/* One handle per line: hide Crepe's "+" add-button, keep the dots as a menu
+   trigger, and disable block dragging. */
+.milkdown-block-handle .operation-item:first-child { display: none; }
+.milkdown-block-handle,
+.milkdown-block-handle .operation-item {
+  cursor: pointer;
+  -webkit-user-drag: none;
+}
+
+.mdee-block-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 200px;
+  padding: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.mdee-block-menu .group + .group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.mdee-block-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.mdee-block-menu button:hover { background: var(--hover); }
+#editor .milkdown .ProseMirror { font-size: var(--editor-font-size); }
+
+#settings-hint {
+  flex: none;
+  padding: 6px 14px;
+  font-size: 12px;
+  background: #fff3cd;
+  color: #664d03;
+  border-top: 1px solid var(--border);
+}
+:root[data-theme="dark"] #settings-hint { background: #3a2f00; color: #f0e2a8; }

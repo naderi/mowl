@@ -1,0 +1,220 @@
+# MDee — Architecture & extension guide
+
+Everything you need to pick this project up again months from now. Read this
+before changing anything non‑trivial.
+
+---
+
+## 1. Big picture
+
+MDee is a **Tauri v2** desktop app:
+
+```
+┌───────────────────────────────────────────────┐
+│  Rust  (src-tauri/)                            │
+│  • window, native dialogs                      │
+│  • #[tauri::command] functions                 │
+│  • settings.toml  (portable, watched)          │
+│  • single-instance + file associations         │
+│  • Markdown → HTML export (comrak)             │
+│  • GFM table pretty-printer                    │
+├───────────────────────────────────────────────┤
+│  Frontend  (src/)  — TypeScript + Vite,        │
+│  no framework                                  │
+│  • Milkdown "Crepe" editor (WYSIWYG)           │
+│  • tab strip, source-view textarea            │
+│  • toolbar, block (⠿) menu, theme, RTL         │
+└───────────────────────────────────────────────┘
+```
+
+The frontend never touches the filesystem directly — it calls Rust commands via
+`invoke(...)`. Rust never renders UI — it returns data / emits events.
+
+**Why this stack:** a real inline‑WYSIWYG Markdown editor needs a browser
+rich‑text engine (ProseMirror via Milkdown Crepe). Tauri gives that a small,
+portable native shell using the OS WebView instead of bundling Chromium.
+
+---
+
+## 2. Repo layout
+
+| Path | What |
+|---|---|
+| `index.html` | The single page. Toolbar buttons live here as static markup. |
+| `src/main.ts` | **Orchestrator.** App state, all wiring, every command call. Start here. |
+| `src/editor.ts` | Thin wrapper over one Crepe instance (`init` / `setContent` / `getMarkdown` / `setDirection` / `setSpellcheck`). |
+| `src/tabs.ts` | `Tab` model + `TabBar` (renders the strip, fires `onActivate` / `onCloseRequest` / `onStructureChange`). |
+| `src/theme.ts` | Resolves `system`/`light`/`dark`, swaps the compiled Crepe theme stylesheet at runtime. |
+| `src/link-clipboard.ts` | ProseMirror `$prose` plugin: paste a URL over a selection / `Ctrl+K` → link it. |
+| `src/block-menu.ts` | The `⠿` block menu (turn‑into, insert, duplicate, delete, table). Raw ProseMirror commands. |
+| `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu. Theme tokens on `:root`. |
+| `src-tauri/src/lib.rs` | Tauri builder: plugins (single‑instance first), `AppState`, command registry, `.setup()` spawns the `settings.toml` watcher. `file_arg()` picks a Markdown path out of argv. |
+| `src-tauri/src/commands.rs` | All `#[tauri::command]`s: `get_settings`, `save_settings`, `read_document`, `write_document`, `render_html`. |
+| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (theme, direction, spellcheck, fonts, accent, quit_on_escape) + app‑managed state (window, open tabs, recents). Plus the 1 Hz file watcher + write‑signature tracking. |
+| `src-tauri/src/portable.rs` | Resolves the portable data dir (next to exe; on macOS next to the `.app`); writability check + OS‑config fallback. |
+| `src-tauri/src/export.rs` | `render_html`: Markdown → GFM HTML (comrak) wrapped in a self‑contained page. |
+| `src-tauri/src/mdfmt.rs` | `format_tables`: pretty‑prints GFM tables in a Markdown string. |
+| `src-tauri/assets/export/` | Bundled (offline) KaTeX + highlight.js + template/CSS, `include_str!`‑ed by `export.rs`. |
+| `src-tauri/tauri.conf.json` | Window config, bundle config, CSP. |
+| `src-tauri/capabilities/default.json` | Tauri permission allow‑list. **Add a permission here whenever you call a new `window.*` / plugin API.** |
+| `.github/workflows/release.yml` | CI: 5‑target matrix (win x64/arm64, mac universal, linux x64/arm64), `tauri-action`, draft release + checksums. |
+
+---
+
+## 3. Runtime files (created next to the executable)
+
+Portable install → beside `MDee.exe` (dev: `src-tauri/target/debug/`). If that
+folder is read‑only, they fall back to the OS config dir and the app shows a
+hint bar.
+
+- **`settings.toml`** — the only settings file. Top half is hand‑editable
+  (theme, direction, spellcheck, fonts, sizes, accent, `quit_on_escape`); bottom
+  half is app‑managed (window geometry, open tabs, recents). The app writes it
+  debounced (800 ms) and on quit; a 1 Hz watcher (`settings::watch`) picks up
+  **external** edits and emits `settings-changed` → `main.ts` re‑applies theme /
+  direction / appearance without a restart. The watcher skips the app's own
+  writes by comparing a size+mtime signature (`AppState.last_write`).
+  Text editing does **not** trigger a settings write.
+- **`data/webview2/`** (Windows, portable only) — WebView2 cache, redirected here
+  so nothing leaks into `%LOCALAPPDATA%`.
+
+---
+
+## 4. Core data flow
+
+### Document / tabs
+- One Crepe instance for the whole app. Tabs are cheap records
+  `{ path, saved, content, dirty, scrollTop }`.
+- Switching tabs → `TabBar.onActivate` → save the outgoing tab's text/scroll,
+  then `writeView(next.content)` swaps the editor content in place
+  (`replaceAll`, no teardown).
+- `readView()` / `writeView()` abstract "WYSIWYG editor **or** source textarea".
+- `switching` flag suppresses the change handler during programmatic swaps.
+- `adoptNormalized()` — Crepe reformats Markdown on load; we adopt that as the
+  clean baseline so a freshly opened file isn't marked dirty.
+
+### Save
+`saveDoc` → `invoke("write_document", …)`. Rust pretty‑prints GFM tables
+(`mdfmt`) and **returns the text it actually wrote**; the frontend resyncs the
+view if it changed.
+
+### Settings
+`get_settings` returns `{ settings, portable, location, open_with }` in one call.
+`save_settings` persists the whole `Settings` struct and records its signature.
+External edits arrive as a `settings-changed` event.
+
+### Opening files from the OS
+`file_arg(argv)` finds the first existing `.md/.markdown/.mdx/.txt` in the
+command line. First launch → `get_settings().open_with`. Later launches are
+caught by `tauri-plugin-single-instance`, which emits `open-file` to the running
+window and focuses it. `bundle.fileAssociations` in `tauri.conf.json` makes the
+NSIS installer register `.md` / `.markdown`. macOS would need `RunEvent::Opened`
+instead of argv (not wired yet).
+
+### Export
+`render_html(markdown, title, dir)` → comrak GFM → `template.html` with all
+CSS/JS/fonts inlined (KaTeX renders `$…$` on load, highlight.js colours code).
+Frontend writes it via `write_document` (HTML path ⇒ table formatter skipped) or,
+for PDF, loads it into a hidden `<iframe>` and calls `print()`.
+
+---
+
+## 5. How to add things
+
+### A toolbar button
+1. `index.html` → add `<button id="btn-x">` with an inline SVG inside `#actions`.
+2. `src/main.ts` → `wireButtons()` → `getElementById("btn-x")?.addEventListener("click", …)`.
+3. Style is already generic (`#actions button`). Use `.active` / `disabled` as needed.
+
+### A block‑menu (⠿) entry
+`src/block-menu.ts` → add an item to the right group in `GROUPS`.
+- Selection‑based conversion → `turnInto(v => someProseMirrorCommand)`
+  (it lifts list items out first).
+- Structural edit → `structural((view, target) => { …view.dispatch(tr)… })`
+  where `target` is `{ textPos, from, to, node }` for the hovered block.
+- Do **not** use Milkdown's command registry (`callCommand`) from here — it
+  silently no‑ops across the Vite dep boundary. Use `@milkdown/kit/prose/*`.
+
+### A setting in `settings.toml`
+1. `src-tauri/src/settings.rs` → add field to `Settings` + `Default` (the struct
+   has `#[serde(default)]`, so old files stay compatible).
+2. `src/main.ts` → add it to the `Settings` interface.
+   - **Appearance pref** (font/colour): apply it in `applyAppearance()` as a CSS
+     var, and add it to the `settings-changed` merge list so external edits take
+     effect live.
+   - **Behaviour pref** (like `quit_on_escape`): read `settings.x` where needed;
+     add it to the `settings-changed` merge too.
+   - **App‑managed value**: call `persistSoon()` after you change it. Do *not*
+     persist on every keystroke.
+
+### A new Rust command
+1. Write `#[tauri::command] pub fn foo(...) -> Result<T, String>` in `commands.rs`.
+2. Register it in `lib.rs` → `tauri::generate_handler![…, commands::foo]`.
+3. Call `invoke<T>("foo", { args })` from the frontend.
+4. If it uses a `window.*` or plugin API on the JS side, add the matching
+   permission to `capabilities/default.json`.
+
+### A new export asset
+Drop the file in `src-tauri/assets/export/`, `include_str!` it in `export.rs`,
+add a `{{PLACEHOLDER}}` to `template.html`, and `.replace()` it in `render_html`.
+Keep everything inlined so exports stay offline.
+
+---
+
+## 6. Decisions & constraints (don't re‑discover these the hard way)
+
+- **Unsigned builds.** No Apple Developer account / Windows cert. Users get
+  SmartScreen / Gatekeeper warnings on first launch; documented in the README.
+  CI publishes SHA‑256 checksums.
+- **`dragDropEnabled: false`** in `tauri.conf.json`. Needed so Crepe's HTML5
+  table row/column drag works on WebView2. Trade‑off: dropping a file onto the
+  window no longer opens it — use `Ctrl+O` or the OS file association.
+- **File open = argv, not drag.** Double‑click / "Open with" launches
+  `MDee.exe <path>`. `tauri-plugin-single-instance` keeps it to one process and
+  routes later opens into the running window. Association is registered by the
+  **installer**, so the portable `.exe` alone won't show up as a default app.
+- **`quit_on_escape`** (off by default). The block menu's Esc handler calls
+  `stopImmediatePropagation()` so dismissing it never quits; other Crepe popups
+  aren't guarded — revisit if it bites.
+- **Minimized‑window position.** Windows reports ~`-32000` for a minimized
+  window; `main.ts` filters bogus positions in `onMoved` and validates saved
+  coordinates in `restoreWindow` (which also runs early + `setFocus`).
+- **Milkdown command registry** is not reachable from our own modules (Vite
+  pre‑bundles Crepe and our imports separately). Block menu uses raw ProseMirror
+  commands from `@milkdown/kit/prose/*`. Marks/schema *are* shared, so
+  `linkSchema.type(ctx)` etc. work.
+- **Source view shows Crepe‑normalised Markdown**, not the original file bytes,
+  because that normalised form is the baseline for the dirty check and is what
+  gets written on save.
+- **CSP is `null`** (`tauri.conf.json`). Fine for a local editor; tighten if the
+  app ever loads remote content.
+- **Big JS bundle (~1.5 MB).** Mostly CodeMirror language grammars pulled in by
+  Crepe's code‑block feature, lazy‑loaded per language. Trim via Crepe's
+  `featureConfigs` if it matters.
+- **Repo lives under a pCloud sync path.** `target/` and `node_modules/` should
+  be excluded from sync (or move the working copy out); only the git repo needs
+  backing up.
+
+---
+
+## 7. Build / dev / release
+
+```bash
+pnpm install
+pnpm tauri dev            # run with HMR (frontend) + auto-rebuild (Rust)
+pnpm tauri build          # release bundles for the host OS
+pnpm tauri build --bundles nsis      # Windows: just the installer (+ portable exe at target/release/mdee.exe)
+cargo test --manifest-path src-tauri/Cargo.toml      # Rust unit tests
+pnpm exec tsc --noEmit    # frontend typecheck
+```
+
+Toolchain: Rust stable (MSVC on Windows) + VS Build Tools + Windows SDK; Node 20+;
+`pnpm`. WebView2 ships with Windows 10/11. See
+<https://tauri.app/start/prerequisites/>.
+
+**Release via CI:** push a `v*` tag → `.github/workflows/release.yml` builds all
+five targets and opens a draft GitHub release. Bump `version` in **both**
+`package.json` and `src-tauri/tauri.conf.json` first.
+
+`pnpm` note: build scripts (esbuild) are gated — `pnpm-workspace.yaml` has the
+`allowBuilds` / `onlyBuiltDependencies` entries that permit it.

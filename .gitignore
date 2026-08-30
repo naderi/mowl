@@ -1,0 +1,26 @@
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Dependencies / build output
+node_modules
+dist
+dist-ssr
+/release/
+*.local
+
+# Portable runtime data (created next to the executable at runtime)
+/settings.toml
+/data/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
