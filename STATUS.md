@@ -36,7 +36,7 @@ Version: **0.1.0** · Last built: Windows x64 (NSIS installer + portable exe).
   `file_arg(argv)` + `bundle.fileAssociations` for `.md` / `.markdown`. First
   launch → `SettingsPayload.open_with`; later launches → `open-file` event into
   the running window.
-- **App icon** from `icon/Mdee_icon.png`.
+- **App icon** from `icon/md_solid_white.png` (`pnpm tauri icon` → `src-tauri/icons/`).
 - CI workflow `.github/workflows/release.yml` (5 targets) — **written, never run**.
 - Rust unit tests (7) green; `tsc --noEmit` green.
 
