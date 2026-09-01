@@ -442,6 +442,32 @@ function updateSourceButton(): void {
   );
 }
 
+// --- theme button -----------------------------------------------------
+
+const SVG_OPEN =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">';
+const THEME_ICON: Record<ThemePref, string> = {
+  // "auto": half-lit circle
+  system: `${SVG_OPEN}<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>`,
+  // sun
+  light: `${SVG_OPEN}<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
+  // moon
+  dark: `${SVG_OPEN}<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>`,
+};
+const THEME_LABEL: Record<ThemePref, string> = {
+  system: "Theme: system — click for light",
+  light: "Theme: light — click for dark",
+  dark: "Theme: dark — click for system",
+};
+
+function updateThemeButton(): void {
+  const btn = document.getElementById("btn-theme");
+  if (!btn) return;
+  const pref = settings?.theme ?? "system";
+  btn.innerHTML = THEME_ICON[pref];
+  btn.setAttribute("title", THEME_LABEL[pref]);
+}
+
 function toggleSource(): void {
   const tab = tabBar.active;
   if (!tab) return;
@@ -678,6 +704,7 @@ function wireButtons(): void {
   document.getElementById("btn-theme")?.addEventListener("click", () => {
     settings.theme = nextTheme(settings.theme);
     applyTheme(settings.theme);
+    updateThemeButton();
     persistSoon();
   });
 }
@@ -834,6 +861,7 @@ async function bootstrap(): Promise<void> {
     settings.accent = ext.accent;
     applyAppearance();
     applyTheme(settings.theme);
+    updateThemeButton();
     if (!sourceMode) applyDirection(settings.direction === "rtl" ? "rtl" : "ltr");
     editor.setSpellcheck(settings.spellcheck);
     updateTitle();
@@ -890,6 +918,7 @@ async function bootstrap(): Promise<void> {
   wireButtons();
   wireAbout();
   updateSourceButton();
+  updateThemeButton();
   updateDirButtons();
   wireShortcuts();
   await wireWindowState();
