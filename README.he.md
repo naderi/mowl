@@ -125,7 +125,7 @@
 
 | מימין לשמאל (לכל קובץ) | תפריט הבלוק |
 |---|---|
-| ![מסמך מימין לשמאל](docs/screenshot-rtl.png) | <img src="docs/screenshot-block-menu.png" alt="תפריט הבלוק על הידית ⠿" width="240"> |
+| ![מסמך מימין לשמאל](docs/screenshot-rtl.png) | ![תפריט הבלוק על הידית ⠿](docs/screenshot-block-menu.png) |
 
 ## קיצורי מקלדת
 

@@ -129,7 +129,7 @@ you so in the window. Every release also ships a fully commented
 
 | Right‑to‑left (per file) | Block menu |
 |---|---|
-| ![Right‑to‑left document](docs/screenshot-rtl.png) | <img src="docs/screenshot-block-menu.png" alt="Block menu on the ⠿ handle" width="240"> |
+| ![Right‑to‑left document](docs/screenshot-rtl.png) | ![Block menu on the ⠿ handle](docs/screenshot-block-menu.png) |
 
 ## Keyboard shortcuts
 

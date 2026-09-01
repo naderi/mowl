@@ -128,7 +128,7 @@
 
 | من اليمين إلى اليسار (لكلّ ملفّ) | قائمة الكتلة |
 |---|---|
-| ![مستند من اليمين إلى اليسار](docs/screenshot-rtl.png) | <img src="docs/screenshot-block-menu.png" alt="قائمة الكتلة على المقبض ⠿" width="240"> |
+| ![مستند من اليمين إلى اليسار](docs/screenshot-rtl.png) | ![قائمة الكتلة على المقبض ⠿](docs/screenshot-block-menu.png) |
 
 ## اختصارات لوحة المفاتيح
 

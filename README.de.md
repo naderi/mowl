@@ -146,7 +146,7 @@ Jede Veröffentlichung bringt außerdem eine vollständig kommentierte
 
 | Rechts‑nach‑links (pro Datei) | Blockmenü |
 |---|---|
-| ![Dokument von rechts nach links](docs/screenshot-rtl.png) | <img src="docs/screenshot-block-menu.png" alt="Blockmenü am ⠿-Griff" width="240"> |
+| ![Dokument von rechts nach links](docs/screenshot-rtl.png) | ![Blockmenü am ⠿-Griff](docs/screenshot-block-menu.png) |
 
 ## Tastenkürzel
 

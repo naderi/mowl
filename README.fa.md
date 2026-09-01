@@ -135,7 +135,7 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 
 | راست‌به‌چپ (برای هر فایل) | منوی بلوک |
 |---|---|
-| ![سند راست‌به‌چپ](docs/screenshot-rtl.png) | <img src="docs/screenshot-block-menu.png" alt="منوی بلوک روی دستگیرهٔ ⠿" width="240"> |
+| ![سند راست‌به‌چپ](docs/screenshot-rtl.png) | ![منوی بلوک روی دستگیرهٔ ⠿](docs/screenshot-block-menu.png) |
 
 ## میان‌برهای صفحه‌کلید
 
