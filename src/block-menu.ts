@@ -9,7 +9,12 @@ import type { Ctx } from "@milkdown/kit/ctx";
 import { editorViewCtx } from "@milkdown/kit/core";
 import { setBlockType, wrapIn } from "@milkdown/kit/prose/commands";
 import { wrapInList, liftListItem } from "@milkdown/kit/prose/schema-list";
-import { TextSelection, type Command, type EditorState } from "@milkdown/kit/prose/state";
+import {
+  NodeSelection,
+  TextSelection,
+  type Command,
+  type EditorState,
+} from "@milkdown/kit/prose/state";
 import type { EditorView } from "@milkdown/kit/prose/view";
 import type { Node as ProseNode, NodeType } from "@milkdown/kit/prose/model";
 
@@ -143,7 +148,29 @@ const GROUPS: Item[][] = [
       }),
     },
     {
+      label: "Image",
+      active: isType("image-block"),
+      run: structural((view, t) => {
+        const type = view.state.schema.nodes["image-block"];
+        if (!type) return;
+        const img = type.create({ src: "" });
+        const empty =
+          t.node.type.name === "paragraph" && t.node.content.size === 0;
+        const at = empty ? t.from : t.to;
+        let tr = empty
+          ? view.state.tr.replaceWith(t.from, t.to, img)
+          : view.state.tr.insert(t.to, img);
+        try {
+          tr = tr.setSelection(NodeSelection.create(tr.doc, at));
+        } catch {
+          /* selecting the new node is best-effort */
+        }
+        view.dispatch(tr.scrollIntoView());
+      }),
+    },
+    {
       label: "Divider",
+      active: isType("hr"),
       run: structural((view, t) => {
         const hr = node(view, "hr").create();
         view.dispatch(view.state.tr.insert(t.to, hr).scrollIntoView());
@@ -192,11 +219,20 @@ function resolveTarget(view: EditorView, handleRect: DOMRect): Target | null {
   if (!probe) return null;
   try {
     const $pos = view.state.doc.resolve(probe.pos);
-    if ($pos.depth < 1) return null;
-    const from = $pos.before(1);
-    const node = $pos.node(1);
+    if ($pos.depth >= 1) {
+      const from = $pos.before(1);
+      const node = $pos.node(1);
+      const to = from + node.nodeSize;
+      return { textPos: Math.min(Math.max(probe.pos, from + 1), to - 1), from, to, node };
+    }
+    // Atom top-level blocks (images) have no text to probe "inside" of, so
+    // posAtCoords only ever lands on the boundary next to them (depth 0).
+    // Take whichever neighbouring top-level node the probe point sits by.
+    const node = $pos.nodeAfter ?? $pos.nodeBefore;
+    if (!node) return null;
+    const from = $pos.nodeAfter ? $pos.pos : $pos.pos - node.nodeSize;
     const to = from + node.nodeSize;
-    return { textPos: Math.min(Math.max(probe.pos, from + 1), to - 1), from, to, node };
+    return { textPos: from, from, to, node };
   } catch {
     return null;
   }

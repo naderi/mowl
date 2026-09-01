@@ -1,5 +1,6 @@
 // Thin wrapper around Milkdown Crepe: one editor instance, documents are
 // swapped in place (tabbed editing keeps a single instance — see tabs.ts).
+import { invoke } from "@tauri-apps/api/core";
 import { Crepe } from "@milkdown/crepe";
 import "@milkdown/crepe/theme/common/style.css";
 import { replaceAll } from "@milkdown/kit/utils";
@@ -26,6 +27,10 @@ export class Editor {
   private disposeBlockMenu: (() => void) | null = null;
   private readonly host: HTMLElement;
   private listMarker: ListMarker = "*";
+  /** Path of the document in the active tab — the base for relative images. */
+  private docPath: string | null = null;
+  /** Resolved `data:` URLs, keyed by `docPath \0 src`. */
+  private readonly imageCache = new Map<string, string>();
 
   /** Fires on every content change. */
   onChange: () => void = () => {};
@@ -39,10 +44,47 @@ export class Editor {
     this.listMarker = marker;
   }
 
+  /** Tell the editor which file is being edited, so relative image paths
+   *  (`![](pic.png)`, `![](../assets/pic.png)`) resolve against its folder. */
+  setDocPath(path: string | null): void {
+    this.docPath = path;
+  }
+
+  /** `proxyDomURL` hook: map a Markdown image target to something the WebView
+   *  can actually display. Remote / data URLs pass through; local paths are
+   *  read by the backend and returned as a `data:` URL. */
+  private resolveImageSrc = (src: string): string | Promise<string> => {
+    const raw = (src ?? "").trim();
+    if (
+      !raw ||
+      raw.startsWith("#") ||
+      raw.startsWith("//") ||
+      /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ||
+      /^(data|blob):/i.test(raw)
+    ) {
+      return src;
+    }
+    const key = `${this.docPath ?? ""}\u0000${raw}`;
+    const cached = this.imageCache.get(key);
+    if (cached) return cached;
+    return invoke<string>("read_image_data_url", { docPath: this.docPath, src: raw })
+      .then((url) => {
+        this.imageCache.set(key, url);
+        return url;
+      })
+      .catch(() => src);
+  };
+
   /** Create the underlying Crepe instance once. */
   async init(markdown: string): Promise<void> {
     await this.destroy();
-    const crepe = new Crepe({ root: this.host, defaultValue: markdown });
+    const crepe = new Crepe({
+      root: this.host,
+      defaultValue: markdown,
+      featureConfigs: {
+        [Crepe.Feature.ImageBlock]: { proxyDomURL: this.resolveImageSrc },
+      },
+    });
     const marker = this.listMarker;
     crepe.editor
       .config((ctx) => configureMarkdownSerializer(ctx, marker))

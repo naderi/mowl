@@ -86,6 +86,7 @@ pub fn run() {
             commands::read_document,
             commands::write_document,
             commands::render_html,
+            commands::read_image_data_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

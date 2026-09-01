@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, LogicalSize, LogicalPosition } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { open, save, ask, message } from "@tauri-apps/plugin-dialog";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { Editor } from "./editor";
 import { TabBar, baseName, type Tab } from "./tabs";
@@ -43,6 +44,7 @@ interface SettingsPayload {
   portable: boolean;
   location: string;
   open_with: string | null;
+  version: string;
 }
 
 const win = getCurrentWindow();
@@ -80,6 +82,28 @@ function writeView(md: string, scrollTop = 0): void {
 
 function viewScrollTop(): number {
   return (sourceMode ? sourceEl : editorHost).scrollTop;
+}
+
+/** How far the visible view is scrolled, as a 0..1 fraction of its range.
+ *  Used to carry the reading position across a source/preview toggle. */
+function viewScrollFraction(): number {
+  const el = sourceMode ? sourceEl : editorHost;
+  const range = el.scrollHeight - el.clientHeight;
+  if (range <= 0) return 0;
+  return Math.min(1, Math.max(0, el.scrollTop / range));
+}
+
+/** Scroll the visible view to `frac` (0..1) of its range. The editor's height
+ *  only settles after layout, so defer a frame there; the textarea is ready
+ *  synchronously but must be set after `.focus()` (which scrolls its caret). */
+function applyScrollFraction(frac: number): void {
+  const el = sourceMode ? sourceEl : editorHost;
+  const run = () => {
+    const range = el.scrollHeight - el.clientHeight;
+    el.scrollTop = range > 0 ? Math.round(frac * range) : 0;
+  };
+  if (sourceMode) run();
+  else requestAnimationFrame(run);
 }
 
 /** Push the appearance-related settings into CSS custom properties. */
@@ -183,6 +207,7 @@ tabBar.onActivate = (next: Tab, prev: Tab | null) => {
     prev.content = readView();
     prev.scrollTop = viewScrollTop();
   }
+  editor.setDocPath(next.path);
   writeView(next.content, next.scrollTop);
   adoptNormalized(next);
   editor.setSpellcheck(settings.spellcheck);
@@ -271,6 +296,7 @@ async function openPath(path: string): Promise<void> {
     cur.saved = text;
     cur.content = text;
     cur.dirty = false;
+    editor.setDocPath(path);
     writeView(text);
     adoptNormalized(cur);
     tabBar.render();
@@ -332,6 +358,7 @@ async function saveAs(): Promise<boolean> {
   if (!dest) return false;
 
   tab.path = dest;
+  editor.setDocPath(dest);
   const ok = await saveDoc();
   if (ok) {
     tabBar.render();
@@ -422,13 +449,13 @@ function toggleSource(): void {
   findBar.close();
   const md = readView();
   tab.content = md;
-  const scroll = viewScrollTop();
+  const frac = viewScrollFraction(); // reading position in the outgoing view
 
   sourceMode = !sourceMode;
   editorHost.hidden = sourceMode;
   sourceEl.hidden = !sourceMode;
 
-  writeView(md, sourceMode ? 0 : scroll);
+  writeView(md);
   adoptNormalized(tab);
   tab.dirty = tab.content !== tab.saved;
   tabBar.refreshDirty();
@@ -436,6 +463,9 @@ function toggleSource(): void {
   updateDirButtons();
   updateTitle();
   (sourceMode ? sourceEl : editor).focus();
+  // Last: focusing the textarea scrolls its caret (end of the freshly set
+  // value) into view, so the reading position must be restored after it.
+  applyScrollFraction(frac);
 }
 
 // --- find / replace -----------------------------------------------------
@@ -548,6 +578,31 @@ function openFind(withReplace: boolean): void {
   findBar.open(withReplace);
 }
 
+// --- about panel --------------------------------------------------------
+
+const aboutEl = document.getElementById("about") as HTMLElement;
+
+function openAbout(): void {
+  findBar.close();
+  aboutEl.hidden = false;
+}
+
+function closeAbout(): void {
+  aboutEl.hidden = true;
+}
+
+function wireAbout(): void {
+  document.getElementById("btn-about")?.addEventListener("click", openAbout);
+  aboutEl.querySelector(".about-close")?.addEventListener("click", closeAbout);
+  aboutEl.addEventListener("click", (e) => {
+    if (e.target === aboutEl) closeAbout(); // click on the backdrop
+  });
+  document.getElementById("about-link")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    void openUrl("https://github.com/naderi");
+  });
+}
+
 // --- wiring --------------------------------------------------------------
 
 function wireShortcuts(): void {
@@ -560,6 +615,11 @@ function wireShortcuts(): void {
         e.key === "Escape" &&
         !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
       ) {
+        if (!aboutEl.hidden) {
+          e.preventDefault();
+          closeAbout();
+          return;
+        }
         if (findBar.isOpen) {
           e.preventDefault();
           findBar.close();
@@ -793,6 +853,11 @@ async function bootstrap(): Promise<void> {
     }
   });
 
+  const aboutVersion = document.getElementById("about-version");
+  if (aboutVersion) aboutVersion.textContent = `v${payload.version}`;
+  const aboutPath = document.getElementById("about-settings-path");
+  if (aboutPath) aboutPath.textContent = payload.location;
+
   if (!payload.portable) {
     const hint = document.getElementById("settings-hint") as HTMLElement;
     hint.textContent = `Program folder is read-only — settings saved to ${payload.location}`;
@@ -823,6 +888,7 @@ async function bootstrap(): Promise<void> {
   });
 
   wireButtons();
+  wireAbout();
   updateSourceButton();
   updateDirButtons();
   wireShortcuts();

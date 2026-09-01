@@ -42,17 +42,17 @@ portable native shell using the OS WebView instead of bundling Chromium.
 |---|---|
 | `index.html` | The single page. Toolbar buttons live here as static markup. |
 | `src/main.ts` | **Orchestrator.** App state, all wiring, every command call. Start here. |
-| `src/editor.ts` | Thin wrapper over one Crepe instance (`init` / `setContent` / `getMarkdown` / `setDirection` / `setSpellcheck`). |
+| `src/editor.ts` | Thin wrapper over one Crepe instance (`init` / `setContent` / `getMarkdown` / `setDirection` / `setSpellcheck` / `setDocPath`). Also the image `proxyDomURL` hook — see §4. |
 | `src/tabs.ts` | `Tab` model + `TabBar` (renders the strip, fires `onActivate` / `onCloseRequest` / `onStructureChange`). |
 | `src/theme.ts` | Resolves `system`/`light`/`dark`, swaps the compiled Crepe theme stylesheet at runtime. |
 | `src/link-clipboard.ts` | ProseMirror `$prose` plugin: paste a URL over a selection / `Ctrl+K` → link it. |
-| `src/block-menu.ts` | The `⠿` block menu (turn‑into, insert, duplicate, delete, table). Raw ProseMirror commands. |
+| `src/block-menu.ts` | The `⠿` block menu (turn‑into, insert table / image / divider / blank line, duplicate, delete). Raw ProseMirror commands. |
 | `src/markdown-serializer.ts` | `remarkStringifyOptionsCtx` tweaks: bullet‑list marker (`*`/`-`/`+`) and link/image handlers that stop `&` in URLs being escaped. Applied in `Editor.init` via `crepe.editor.config`. |
 | `src/find.ts` | `$prose` plugin for WYSIWYG find: scans text nodes for the query, decorates matches, exposes state via `findKey`. |
 | `src/find-bar.ts` | The find / replace bar UI (`#find-bar`). Backend‑agnostic — `main.ts` hands it a `FindTarget` for the editor or the source textarea. |
 | `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu. Theme tokens on `:root`. |
 | `src-tauri/src/lib.rs` | Tauri builder: plugins (single‑instance first), `AppState`, command registry, `.setup()` spawns the `settings.toml` watcher. `file_arg()` picks a Markdown path out of argv. |
-| `src-tauri/src/commands.rs` | All `#[tauri::command]`s: `get_settings`, `save_settings`, `read_document`, `write_document`, `render_html`. |
+| `src-tauri/src/commands.rs` | All `#[tauri::command]`s: `get_settings`, `save_settings`, `read_document`, `write_document`, `render_html`, `read_image_data_url` (+ a local base64 encoder — no crate). `get_settings`'s payload also carries `version` (`CARGO_PKG_VERSION`) for the About panel. |
 | `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (theme, direction, spellcheck, fonts, accent, quit_on_escape, list_marker, show_path, open_last_session) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
 | `src-tauri/src/portable.rs` | Resolves the portable data dir (next to exe; on macOS next to the `.app`); writability check + OS‑config fallback. |
 | `src-tauri/src/export.rs` | `render_html`: Markdown → GFM HTML (comrak) wrapped in a self‑contained page. |
@@ -94,6 +94,13 @@ hint bar.
   then `writeView(next.content)` swaps the editor content in place
   (`replaceAll`, no teardown).
 - `readView()` / `writeView()` abstract "WYSIWYG editor **or** source textarea".
+- `toggleSource()` carries the reading position across the switch: it records the
+  outgoing view's scroll as a 0..1 fraction (`viewScrollFraction()`) and re-applies
+  it to the incoming view (`applyScrollFraction()`). Proportional only — cheap
+  (runs once per toggle), drifts where rendered height ≠ source length.
+  `applyScrollFraction()` must run **after** the view's `.focus()` — focusing the
+  source textarea scrolls its caret (end of the just-set `.value`) into view and
+  would otherwise clobber the restored position.
 - `switching` flag suppresses the change handler during programmatic swaps.
 - `adoptNormalized()` — Crepe reformats Markdown on load; we adopt that as the
   clean baseline so a freshly opened file isn't marked dirty.
@@ -116,6 +123,17 @@ window and focuses it. `bundle.fileAssociations` in `tauri.conf.json` makes the
 NSIS installer register `.md` / `.markdown`. macOS would need `RunEvent::Opened`
 instead of argv (not wired yet).
 
+### Images in the editor
+The WebView can't load `<img>` by filesystem path. Crepe's image‑block feature
+takes a `proxyDomURL(src)` hook (set in `Editor.init` via `featureConfigs`), which
+`Editor.resolveImageSrc` implements: remote / `data:` / `blob:` / `#…` targets
+pass straight through; anything else is sent to the `read_image_data_url` Rust
+command, which resolves it against the active document's folder (`Editor.docPath`,
+kept current by `main.ts` on tab activate / open / save‑as), reads the file, and
+returns a `data:` URL (≤ 24 MiB). Results are memo‑cached per `docPath + src`.
+The `⠿` menu's **Image** entry just inserts an empty `image-block` node — Crepe
+renders its paste‑link / upload placeholder.
+
 ### Export
 `render_html(markdown, title, dir)` → comrak GFM → `template.html` with all
 CSS/JS/fonts inlined (KaTeX renders `$…$` on load, highlight.js colours code).
@@ -131,6 +149,13 @@ for PDF, loads it into a hidden `<iframe>` and calls `print()`.
 2. `src/main.ts` → `wireButtons()` → `getElementById("btn-x")?.addEventListener("click", …)`.
 3. Style is already generic (`#actions button`). Use `.active` / `disabled` as needed.
 
+### The About panel
+`#btn-about` (the M↓ mark left of the doc title) → `#about` modal in `index.html`,
+wired in `wireAbout()`. Version + settings path come from the `get_settings`
+payload (`payload.version`, `payload.location`); the GitHub link opens externally
+via `openUrl` (`@tauri-apps/plugin-opener`, covered by `opener:default`). Esc is
+handled in `wireShortcuts()` ahead of find-bar / quit-on-escape.
+
 ### A block‑menu (⠿) entry
 `src/block-menu.ts` → add an item to the right group in `GROUPS`.
 - Selection‑based conversion → `turnInto(v => someProseMirrorCommand)`
@@ -139,6 +164,11 @@ for PDF, loads it into a hidden `<iframe>` and calls `print()`.
   where `target` is `{ textPos, from, to, node }` for the hovered block.
 - Do **not** use Milkdown's command registry (`callCommand`) from here — it
   silently no‑ops across the Vite dep boundary. Use `@milkdown/kit/prose/*`.
+- `resolveTarget()` handles **atom top‑level blocks** (images) specially:
+  `posAtCoords` can only return a position *inside* text content, never
+  "inside" an atom, so hovering one always yields a depth‑0 (doc‑level)
+  boundary position — read `$pos.nodeAfter`/`nodeBefore` for that case
+  instead of `$pos.node(1)`.
 
 ### A setting in `settings.toml`
 1. `src-tauri/src/settings.rs` → add field to `Settings` + `Default` (the struct

@@ -10,6 +10,9 @@
   <body>
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
+        <button id="btn-about" title="About Mowl" aria-label="About Mowl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7l4.5 6L12 7v10"/><path d="M17 8v8"/><path d="M13.5 12.5 17 16l3.5-3.5"/></svg>
+        </button>
         <span id="doc-title" data-tauri-drag-region>Untitled</span>
         <div id="actions">
           <button id="btn-open" title="Open (Ctrl/Cmd+O)" aria-label="Open">
@@ -41,6 +44,17 @@
       <main id="editor"></main>
       <textarea id="source" spellcheck="false" hidden></textarea>
       <div id="settings-hint" hidden></div>
+      <div id="about" hidden>
+        <div class="about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
+          <button class="about-close" aria-label="Close">&times;</button>
+          <svg class="about-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7l4.5 6L12 7v10"/><path d="M17 8v8"/><path d="M13.5 12.5 17 16l3.5-3.5"/></svg>
+          <h2 id="about-title">Mowl <span id="about-version"></span></h2>
+          <p class="about-tag">Portable WYSIWYG Markdown editor</p>
+          <p class="about-meta">by Ali Naderi &middot; MIT License</p>
+          <p><a id="about-link" href="https://github.com/naderi">github.com/naderi</a></p>
+          <p class="about-path" id="about-settings-path"></p>
+        </div>
+      </div>
     </div>
   </body>
 </html>

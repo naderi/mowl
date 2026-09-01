@@ -13,11 +13,19 @@ Version: **0.1.0** · Last built: Windows x64 (NSIS installer + portable exe).
 - **Source view** toggle — `<>` button / `Ctrl/Cmd+Shift+C`. Shows Crepe‑normalised
   Markdown; RTL/LTR buttons disabled here (source is always LTR).
 - **Block menu** on the `⠿` handle (Crepe's `+` hidden, drag disabled): turn into
-  Text / H1‑3 / bullet / numbered / quote / code / **table**, insert line
-  above/below, duplicate, delete. The current block's type is highlighted. Raw
-  ProseMirror commands (`src/block-menu.ts`).
+  Text / H1‑3 / bullet / numbered / quote / code / **table**, insert
+  table / **image** / divider / line above/below, duplicate, delete. The current
+  block's type is highlighted. Raw ProseMirror commands (`src/block-menu.ts`).
+- **Images render in the editor** — `proxyDomURL` hook (`src/editor.ts`) sends
+  local / relative image paths to the `read_image_data_url` Rust command, which
+  resolves them against the current document's folder and returns a `data:` URL.
+  Remote / `data:` URLs pass through untouched.
 - **Link from clipboard**: select text + paste a URL, or `Ctrl/Cmd+K`
   (`src/link-clipboard.ts`).
+- **Source/preview scroll sync**: `toggleSource()` carries the reading position
+  across the switch as a 0..1 fraction (proportional, once per toggle).
+- **About panel**: M↓ mark left of the doc title → `#about` modal (version,
+  author, MIT, github.com/naderi link, active `settings.toml` path).
 - **Tables**: drag rows/columns (needs `dragDropEnabled:false`), auto‑aligned in
   the saved Markdown (`src-tauri/src/mdfmt.rs`).
 - **RTL / LTR** toggle (`direction`), code blocks forced back to LTR. Carried into

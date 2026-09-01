@@ -44,7 +44,26 @@ body {
   -webkit-user-select: none;
 }
 
+#btn-about {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+#btn-about svg { width: 18px; height: 18px; display: block; }
+#btn-about:hover { background: var(--hover); color: var(--accent, #4a7dff); }
+
 #doc-title {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 13px;
   color: var(--bar-fg);
   overflow: hidden;
@@ -233,7 +252,7 @@ body {
 #editor .milkdown .ProseMirror { font-size: var(--editor-font-size); }
 
 /* --- find / replace bar --- */
-#tabs[hidden], #find-bar[hidden] { display: none; }
+#tabs[hidden], #find-bar[hidden], #about[hidden] { display: none; }
 #find-bar {
   flex: none;
   display: flex;
@@ -316,3 +335,59 @@ body {
   border-top: 1px solid var(--border);
 }
 :root[data-theme="dark"] #settings-hint { background: #3a2f00; color: #f0e2a8; }
+
+/* --- About panel --- */
+#about {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+.about-card {
+  position: relative;
+  max-width: 320px;
+  padding: 26px 32px 24px;
+  text-align: center;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+}
+.about-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bar-fg);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.about-close:hover { background: var(--hover); color: var(--fg); }
+.about-logo { width: 40px; height: 40px; color: var(--accent, #4a7dff); }
+.about-card h2 { margin: 8px 0 2px; font-size: 18px; }
+#about-version { font-weight: 400; font-size: 14px; color: var(--bar-fg); }
+.about-tag { margin: 0; font-size: 13px; }
+.about-meta { margin: 6px 0 0; font-size: 12px; color: var(--bar-fg); }
+#about-link {
+  color: var(--accent, #4a7dff);
+  font-size: 13px;
+  text-decoration: none;
+}
+#about-link:hover { text-decoration: underline; }
+.about-path {
+  margin: 14px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--bar-fg);
+  font-family: var(--source-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  word-break: break-all;
+}
