@@ -1,8 +1,8 @@
 name: release
 
+# Manual trigger only (Actions tab). Auto-on-tag is intentionally disabled for
+# now — the macOS matrix job still needs work, and releases are cut by hand.
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
