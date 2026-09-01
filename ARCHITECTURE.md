@@ -1,4 +1,4 @@
-# MDee — Architecture & extension guide
+# Mowl — Architecture & extension guide
 
 Everything you need to pick this project up again months from now. Read this
 before changing anything non‑trivial.
@@ -7,7 +7,7 @@ before changing anything non‑trivial.
 
 ## 1. Big picture
 
-MDee is a **Tauri v2** desktop app:
+Mowl is a **Tauri v2** desktop app:
 
 ```
 ┌───────────────────────────────────────────────┐
@@ -67,7 +67,7 @@ portable native shell using the OS WebView instead of bundling Chromium.
 
 ## 3. Runtime files (created next to the executable)
 
-Portable install → beside `MDee.exe` (dev: `src-tauri/target/debug/`). If that
+Portable install → beside `Mowl.exe` (dev: `src-tauri/target/debug/`). If that
 folder is read‑only, they fall back to the OS config dir and the app shows a
 hint bar.
 
@@ -177,7 +177,7 @@ Keep everything inlined so exports stay offline.
   table row/column drag works on WebView2. Trade‑off: dropping a file onto the
   window no longer opens it — use `Ctrl+O` or the OS file association.
 - **File open = argv, not drag.** Double‑click / "Open with" launches
-  `MDee.exe <path>`. `tauri-plugin-single-instance` keeps it to one process and
+  `Mowl.exe <path>`. `tauri-plugin-single-instance` keeps it to one process and
   routes later opens into the running window. Association is registered by the
   **installer**, so the portable `.exe` alone won't show up as a default app.
 - **`quit_on_escape`** (off by default). The block menu's Esc handler calls
@@ -210,7 +210,7 @@ Keep everything inlined so exports stay offline.
 pnpm install
 pnpm tauri dev            # run with HMR (frontend) + auto-rebuild (Rust)
 pnpm tauri build          # release bundles for the host OS
-pnpm tauri build --bundles nsis      # Windows: just the installer (+ portable exe at target/release/mdee.exe)
+pnpm tauri build --bundles nsis      # Windows: just the installer (+ portable exe at target/release/mowl.exe)
 cargo test --manifest-path src-tauri/Cargo.toml      # Rust unit tests
 pnpm exec tsc --noEmit    # frontend typecheck
 ```

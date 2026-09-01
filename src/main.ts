@@ -131,7 +131,7 @@ function updateTitle(): void {
   const shown = settings?.show_path && tab?.path ? tab.path : name;
   titleEl.textContent = mark + shown;
   titleEl.title = tab?.path ?? "";
-  void win.setTitle(`${mark}${name} — MDee`);
+  void win.setTitle(`${mark}${name} — Mowl`);
 }
 
 function persistSoon(): void {
@@ -196,7 +196,7 @@ tabBar.onCloseRequest = async (tab: Tab) => {
   if (tab.dirty) {
     const discard = await ask(
       `Discard unsaved changes to ${baseName(tab.path)}?`,
-      { title: "MDee", kind: "warning" },
+      { title: "Mowl", kind: "warning" },
     );
     if (!discard) return;
   }
@@ -261,7 +261,7 @@ async function openPath(path: string): Promise<void> {
   try {
     text = await invoke<string>("read_document", { path });
   } catch (e) {
-    await message(String(e), { title: "MDee", kind: "error" });
+    await message(String(e), { title: "Mowl", kind: "error" });
     return;
   }
 
@@ -308,7 +308,7 @@ async function saveDoc(): Promise<boolean> {
       contents: md,
     });
   } catch (e) {
-    await message(String(e), { title: "MDee", kind: "error" });
+    await message(String(e), { title: "Mowl", kind: "error" });
     return false;
   }
   if (written !== md) writeView(written, viewScrollTop());
@@ -362,9 +362,9 @@ async function exportHtml(): Promise<void> {
       dir: settings.direction,
     });
     await invoke("write_document", { path: dest, contents: html });
-    await message("HTML exported.", { title: "MDee" });
+    await message("HTML exported.", { title: "Mowl" });
   } catch (e) {
-    await message(String(e), { title: "MDee", kind: "error" });
+    await message(String(e), { title: "Mowl", kind: "error" });
   }
 }
 
@@ -669,7 +669,7 @@ async function quitApp(): Promise<void> {
   closing = true;
   if (tabBar.tabs.some((t) => t.dirty)) {
     const quit = await ask("You have unsaved changes. Quit without saving?", {
-      title: "MDee",
+      title: "Mowl",
       kind: "warning",
     });
     if (!quit) {
@@ -836,5 +836,5 @@ bootstrap().catch(async (e) => {
   } catch {
     /* ignore */
   }
-  await message(`Startup failed: ${String(e)}`, { title: "MDee", kind: "error" });
+  await message(`Startup failed: ${String(e)}`, { title: "Mowl", kind: "error" });
 });

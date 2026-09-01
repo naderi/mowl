@@ -117,7 +117,7 @@ impl Store {
         }
 
         let base = portable::config_base().unwrap_or_else(std::env::temp_dir);
-        let dir = base.join("MDee");
+        let dir = base.join("Mowl");
         let _ = std::fs::create_dir_all(&dir);
         Self {
             path: dir.join("settings.toml"),

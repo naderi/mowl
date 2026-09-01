@@ -19,7 +19,7 @@ export interface FindStatus {
   index: number;
 }
 
-export const findKey = new PluginKey<FindState>("mdee-find");
+export const findKey = new PluginKey<FindState>("mowl-find");
 
 export interface Match {
   from: number;
@@ -78,8 +78,8 @@ function decorate(
       Decoration.inline(m.from, m.to, {
         class:
           i === active
-            ? "mdee-find-hit mdee-find-hit--active"
-            : "mdee-find-hit",
+            ? "mowl-find-hit mowl-find-hit--active"
+            : "mowl-find-hit",
       }),
     ),
   );

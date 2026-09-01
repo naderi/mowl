@@ -41,7 +41,13 @@ type Runner = (ctx: Ctx, target: Target) => void;
 interface Item {
   label: string;
   run: Runner;
+  /** True when `node` (the top-level block by the handle) is already this type. */
+  active?: (node: ProseNode) => boolean;
 }
+
+const isType = (name: string) => (n: ProseNode) => n.type.name === name;
+const isHeading = (level: number) => (n: ProseNode) =>
+  n.type.name === "heading" && n.attrs.level === level;
 
 const node = (view: EditorView, name: string): NodeType => view.state.schema.nodes[name];
 
@@ -108,16 +114,16 @@ function buildTable(view: EditorView, rows = 3, cols = 3): ProseNode | null {
 
 const GROUPS: Item[][] = [
   [
-    { label: "Text", run: turnInto((v) => setBlockType(node(v, "paragraph"))) },
-    { label: "Heading 1", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 1 })) },
-    { label: "Heading 2", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 2 })) },
-    { label: "Heading 3", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 3 })) },
+    { label: "Text", run: turnInto((v) => setBlockType(node(v, "paragraph"))), active: isType("paragraph") },
+    { label: "Heading 1", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 1 })), active: isHeading(1) },
+    { label: "Heading 2", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 2 })), active: isHeading(2) },
+    { label: "Heading 3", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 3 })), active: isHeading(3) },
   ],
   [
-    { label: "Bullet list", run: toList("bullet_list") },
-    { label: "Numbered list", run: toList("ordered_list") },
-    { label: "Quote", run: turnInto((v) => wrapIn(node(v, "blockquote"))) },
-    { label: "Code block", run: turnInto((v) => setBlockType(node(v, "code_block"))) },
+    { label: "Bullet list", run: toList("bullet_list"), active: isType("bullet_list") },
+    { label: "Numbered list", run: toList("ordered_list"), active: isType("ordered_list") },
+    { label: "Quote", run: turnInto((v) => wrapIn(node(v, "blockquote"))), active: isType("blockquote") },
+    { label: "Code block", run: turnInto((v) => setBlockType(node(v, "code_block"))), active: isType("code_block") },
     {
       label: "Table",
       run: structural((view, t) => {
@@ -205,7 +211,7 @@ class BlockMenu {
   constructor(crepe: Crepe) {
     this.#crepe = crepe;
     this.#el = document.createElement("div");
-    this.#el.className = "mdee-block-menu";
+    this.#el.className = "mowl-block-menu";
     this.#el.hidden = true;
     document.body.appendChild(this.#el);
     this.#build();
@@ -227,6 +233,7 @@ class BlockMenu {
     });
     if (!this.#target) return;
 
+    this.#syncActive();
     this.#el.hidden = false;
     this.#open = true;
 
@@ -270,6 +277,17 @@ class BlockMenu {
     });
   }
 
+  /** Mark the button whose type matches the hovered block. */
+  #syncActive(): void {
+    const node = this.#target?.node;
+    this.#el.querySelectorAll<HTMLButtonElement>("button[data-g]").forEach((btn) => {
+      const item = GROUPS[Number(btn.dataset.g)]?.[Number(btn.dataset.i)];
+      const on = !!(node && item?.active?.(node));
+      btn.classList.toggle("is-active", on);
+      btn.toggleAttribute("aria-current", on);
+    });
+  }
+
   #onItemClick = (e: Event): void => {
     const btn = (e.target as HTMLElement).closest<HTMLElement>("button[data-g]");
     if (!btn || !this.#target) return;
@@ -281,7 +299,7 @@ class BlockMenu {
       try {
         item.run(ctx, target);
       } catch (err) {
-        console.error("[mdee] block action failed", err);
+        console.error("[mowl] block action failed", err);
       }
       ctx.get(editorViewCtx).focus();
     });

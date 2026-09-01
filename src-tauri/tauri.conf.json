@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "MDee",
+  "productName": "Mowl",
   "version": "0.1.0",
-  "identifier": "com.naderi.mdee",
+  "identifier": "com.naderi.mowl",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "MDee",
+        "title": "Mowl",
         "width": 900,
         "height": 680,
         "minWidth": 480,
@@ -34,7 +34,7 @@
     "targets": "all",
     "category": "Productivity",
     "shortDescription": "A minimalist WYSIWYG Markdown editor",
-    "longDescription": "MDee is a minimalist, portable WYSIWYG Markdown editor with light and dark themes.",
+    "longDescription": "Mowl is a minimalist, portable WYSIWYG Markdown editor with light and dark themes.",
     "fileAssociations": [
       {
         "ext": ["md", "markdown"],

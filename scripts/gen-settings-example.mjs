@@ -9,9 +9,9 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const CONTENT = `# MDee — example configuration
+const CONTENT = `# Mowl — example configuration
 #
-# Copy this file to "settings.toml" in the same folder and edit it. MDee also
+# Copy this file to "settings.toml" in the same folder and edit it. Mowl also
 # creates and maintains settings.toml on its own; hand edits are picked up within
 # about a second, no restart needed. Every key is optional and falls back to the
 # default shown here.
@@ -32,7 +32,7 @@ source_font = ""            # Markdown source-view font ("" = built-in monospace
 source_font_size = 15       # source-view size in px
 accent = ""                 # accent colour, e.g. "#0969da" ("" = default)
 
-# --- written and managed by MDee — no need to touch these ---
+# --- written and managed by Mowl — no need to touch these ---
 # open_files = []            # files to reopen on next launch (session restore)
 # active_tab = 0             # index into open_files of the active tab
 # [window]                   # width / height / x / y / maximized

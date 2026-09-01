@@ -1,4 +1,4 @@
-# MDee — current status
+# Mowl — current status
 
 Snapshot for picking the project up on another machine. Pair with
 [ARCHITECTURE.md](ARCHITECTURE.md) (file map + how‑to) and
@@ -14,7 +14,8 @@ Version: **0.1.0** · Last built: Windows x64 (NSIS installer + portable exe).
   Markdown; RTL/LTR buttons disabled here (source is always LTR).
 - **Block menu** on the `⠿` handle (Crepe's `+` hidden, drag disabled): turn into
   Text / H1‑3 / bullet / numbered / quote / code / **table**, insert line
-  above/below, duplicate, delete. Raw ProseMirror commands (`src/block-menu.ts`).
+  above/below, duplicate, delete. The current block's type is highlighted. Raw
+  ProseMirror commands (`src/block-menu.ts`).
 - **Link from clipboard**: select text + paste a URL, or `Ctrl/Cmd+K`
   (`src/link-clipboard.ts`).
 - **Tables**: drag rows/columns (needs `dragDropEnabled:false`), auto‑aligned in
@@ -36,7 +37,7 @@ Version: **0.1.0** · Last built: Windows x64 (NSIS installer + portable exe).
   `file_arg(argv)` + `bundle.fileAssociations` for `.md` / `.markdown`. First
   launch → `SettingsPayload.open_with`; later launches → `open-file` event into
   the running window.
-- **App icon** from `icon/md_solid_white.png` (`pnpm tauri icon` → `src-tauri/icons/`).
+- **App icon** from `icon/Mowl-icon.png` (`pnpm tauri icon` → `src-tauri/icons/`).
 - CI workflow `.github/workflows/release.yml` (5 targets) — **written, never run**.
 - Rust unit tests (7) green; `tsc --noEmit` green.
 
