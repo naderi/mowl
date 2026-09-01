@@ -19,7 +19,7 @@ const CONTENT = `# Mowl — example configuration
 # --- appearance & behaviour (safe to hand-edit) ---
 
 theme = "system"            # "system" | "light" | "dark"
-direction = "ltr"           # "ltr" | "rtl" — base writing direction of the editor
+direction = "ltr"           # "ltr" | "rtl" — default for new tabs (each file keeps its own direction)
 spellcheck = true           # spell-check squiggles in the WYSIWYG editor
 quit_on_escape = false      # when true, pressing Esc quits the app
 list_marker = "*"           # bullet-list marker written on save: "*" | "-" | "+"
