@@ -7,6 +7,8 @@ runs on Windows, macOS and Linux (x64 and arm64).
 - **WYSIWYG editing** via [Milkdown Crepe](https://milkdown.dev) (ProseMirror)
 - **Tabs** with session restore
 - **Source view** toggle (`Ctrl/Cmd+Shift+C`) — raw Markdown in a plain editor
+  (`Tab` / `Shift+Tab` indent)
+- **Find & replace** (`Ctrl/Cmd+F` find, `Ctrl/Cmd+H` replace) in both views
 - **Block menu** on the `⠿` handle: turn into heading / list / quote / code /
   table, insert line, duplicate, delete
 - **GFM** + tables (drag rows/columns, auto‑aligned on save), task lists, footnotes
@@ -65,13 +67,16 @@ theme = "system"            # system | light | dark
 direction = "ltr"           # ltr | rtl
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
+list_marker = "*"           # bullet-list marker on save: * | - | +
+show_path = false           # show the full file path in the header, not just the name
+open_last_session = true    # reopen the previous session's tabs on startup
 editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)
 source_font_size = 15
 accent = ""                 # accent colour, e.g. "#0969da"
 
-# below: managed by the app — window geometry, open tabs, recent files
+# below: managed by the app — window geometry, open tabs
 ```
 
 ## Portable install

@@ -12,7 +12,6 @@ use tauri::{AppHandle, Emitter};
 
 use crate::portable;
 
-const MAX_RECENT: usize = 12;
 pub const SETTINGS_CHANGED_EVENT: &str = "settings-changed";
 
 /// (size, mtime-millis) — a cheap change signature for `settings.toml`.
@@ -52,6 +51,12 @@ pub struct Settings {
     pub spellcheck: bool,
     /// When true, pressing Esc quits the app.
     pub quit_on_escape: bool,
+    /// Bullet-list marker written on save: "*", "-" or "+".
+    pub list_marker: String,
+    /// Show the full file path (not just the file name) in the editor header.
+    pub show_path: bool,
+    /// Reopen the previous session's tabs on startup.
+    pub open_last_session: bool,
     /// WYSIWYG editor font family ("" = built-in default).
     pub editor_font: String,
     /// Base editor font size in px (headings scale from this).
@@ -67,7 +72,6 @@ pub struct Settings {
     pub open_files: Vec<PathBuf>,
     /// Index into `open_files` of the tab that was active.
     pub active_tab: usize,
-    pub recent_files: Vec<PathBuf>,
     pub window: WindowState,
 }
 
@@ -78,6 +82,9 @@ impl Default for Settings {
             direction: "ltr".to_string(),
             spellcheck: true,
             quit_on_escape: false,
+            list_marker: "*".to_string(),
+            show_path: false,
+            open_last_session: true,
             editor_font: String::new(),
             editor_font_size: 16,
             source_font: String::new(),
@@ -85,17 +92,8 @@ impl Default for Settings {
             accent: String::new(),
             open_files: Vec::new(),
             active_tab: 0,
-            recent_files: Vec::new(),
             window: WindowState::default(),
         }
-    }
-}
-
-impl Settings {
-    pub fn push_recent(&mut self, path: PathBuf) {
-        self.recent_files.retain(|p| p != &path);
-        self.recent_files.insert(0, path);
-        self.recent_files.truncate(MAX_RECENT);
     }
 }
 

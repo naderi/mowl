@@ -224,6 +224,81 @@ body {
 .mdee-block-menu button:hover { background: var(--hover); }
 #editor .milkdown .ProseMirror { font-size: var(--editor-font-size); }
 
+/* --- find / replace bar --- */
+#tabs[hidden], #find-bar[hidden] { display: none; }
+#find-bar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 10px;
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--border);
+}
+#find-bar .find-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#find-bar:not(.replace-mode) .find-row + .find-row { display: none; }
+#find-bar .find-field {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+}
+#find-bar .find-field:focus {
+  outline: none;
+  border-color: var(--accent, #4a7dff);
+}
+#find-bar .find-field.no-match { border-color: #d1242f; }
+#find-bar .find-count {
+  flex: none;
+  min-width: 44px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--bar-fg);
+  font-variant-numeric: tabular-nums;
+}
+#find-bar .find-btn {
+  flex: none;
+  height: 26px;
+  min-width: 26px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bar-fg);
+  cursor: pointer;
+  font-size: 13px;
+  display: grid;
+  place-items: center;
+}
+#find-bar .find-btn svg { width: 14px; height: 14px; }
+#find-bar .find-btn.find-text { font-size: 12px; padding: 0 10px; }
+#find-bar .find-btn:hover { background: var(--hover); color: var(--fg); }
+#find-bar .find-btn.active {
+  background: var(--hover);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+.mdee-find-hit {
+  background: rgba(255, 214, 0, 0.35);
+  border-radius: 2px;
+}
+.mdee-find-hit--active {
+  background: #ff9632;
+  color: #1f2328;
+}
+:root[data-theme="dark"] .mdee-find-hit { background: rgba(255, 214, 0, 0.22); }
+:root[data-theme="dark"] .mdee-find-hit--active { background: #d9772f; color: #1a1a1a; }
+
 #settings-hint {
   flex: none;
   padding: 6px 14px;

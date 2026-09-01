@@ -6,6 +6,8 @@ import { open, save, ask, message } from "@tauri-apps/plugin-dialog";
 import { Editor } from "./editor";
 import { TabBar, baseName, type Tab } from "./tabs";
 import { applyTheme, nextTheme, onSystemThemeChange, type ThemePref } from "./theme";
+import { FindBar, type FindStatus, type FindTarget } from "./find-bar";
+import { isListMarker, type ListMarker } from "./markdown-serializer";
 
 interface WindowState {
   width: number;
@@ -20,6 +22,12 @@ interface Settings {
   direction: "ltr" | "rtl";
   spellcheck: boolean;
   quit_on_escape: boolean;
+  /** Bullet-list marker written on save: "*", "-" or "+". */
+  list_marker: ListMarker;
+  /** Show the full file path (not just the name) in the editor header. */
+  show_path: boolean;
+  /** Reopen the previous session's tabs on startup. */
+  open_last_session: boolean;
   editor_font: string;
   editor_font_size: number;
   source_font: string;
@@ -27,7 +35,6 @@ interface Settings {
   accent: string;
   open_files: string[];
   active_tab: number;
-  recent_files: string[];
   window: WindowState;
 }
 
@@ -44,6 +51,7 @@ const sourceEl = document.getElementById("source") as HTMLTextAreaElement;
 const titleEl = document.getElementById("doc-title") as HTMLElement;
 const editor = new Editor(editorHost);
 const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
+const findBar = new FindBar(editorHost);
 
 let settings: Settings;
 let switching = false;
@@ -120,7 +128,9 @@ function updateTitle(): void {
   const tab = tabBar.active;
   const mark = tab?.dirty ? "• " : "";
   const name = baseName(tab?.path ?? null);
-  titleEl.textContent = mark + name;
+  const shown = settings?.show_path && tab?.path ? tab.path : name;
+  titleEl.textContent = mark + shown;
+  titleEl.title = tab?.path ?? "";
   void win.setTitle(`${mark}${name} — MDee`);
 }
 
@@ -134,13 +144,6 @@ function persistSoon(): void {
   persistTimer = window.setTimeout(() => {
     void invoke("save_settings", { settings });
   }, 800);
-}
-
-function pushRecent(path: string): void {
-  settings.recent_files = [
-    path,
-    ...settings.recent_files.filter((p) => p !== path),
-  ].slice(0, 12);
 }
 
 /** Crepe may reformat Markdown on load; adopt that as the tab's baseline so a
@@ -210,6 +213,37 @@ sourceEl.addEventListener("input", () => {
   if (sourceMode) markDirtyFromView();
 });
 
+/** Edit the textarea via `execCommand` so it stays on the native undo stack
+ *  (`setRangeText` / `value =` wipe undo history). Falls back if unsupported. */
+function sourceEdit(text: string, from: number, to: number): void {
+  sourceEl.focus();
+  sourceEl.setSelectionRange(from, to);
+  const ok = document.execCommand("insertText", false, text);
+  if (!ok) {
+    sourceEl.setRangeText(text, from, to, "end");
+    markDirtyFromView();
+  }
+}
+
+// Tab / Shift+Tab indent in the raw Markdown view (textarea has no default).
+sourceEl.addEventListener("keydown", (e) => {
+  if (e.key !== "Tab" || e.ctrlKey || e.metaKey || e.altKey) return;
+  e.preventDefault();
+  const unit = "\t";
+  const { selectionStart: a, selectionEnd: b, value } = sourceEl;
+  if (a === b && !e.shiftKey) {
+    sourceEdit(unit, a, b);
+  } else {
+    const lineStart = value.lastIndexOf("\n", a - 1) + 1;
+    const block = value.slice(lineStart, b);
+    const changed = e.shiftKey
+      ? block.replace(/^(\t| {1,2})/gm, "")
+      : block.replace(/^/gm, unit);
+    sourceEdit(changed, lineStart, b);
+    sourceEl.setSelectionRange(lineStart, lineStart + changed.length);
+  }
+});
+
 // --- file operations -------------------------------------------------------
 
 function newTab(): void {
@@ -248,7 +282,6 @@ async function openPath(path: string): Promise<void> {
     tabBar.add(path, text); // triggers onActivate -> editor.setContent
   }
 
-  pushRecent(path);
   persistSoon();
 }
 
@@ -301,7 +334,6 @@ async function saveAs(): Promise<boolean> {
   tab.path = dest;
   const ok = await saveDoc();
   if (ok) {
-    pushRecent(dest);
     tabBar.render();
     updateTitle();
     persistSoon();
@@ -387,6 +419,7 @@ function toggleSource(): void {
   const tab = tabBar.active;
   if (!tab) return;
 
+  findBar.close();
   const md = readView();
   tab.content = md;
   const scroll = viewScrollTop();
@@ -405,6 +438,116 @@ function toggleSource(): void {
   (sourceMode ? sourceEl : editor).focus();
 }
 
+// --- find / replace -----------------------------------------------------
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const editorFindTarget: FindTarget = {
+  selectionText: () => editor.selectionText(),
+  setQuery: (q, cs) => editor.findSet(q, cs),
+  step: (dir) => editor.findStep(dir),
+  replace: (r) => editor.findReplace(r),
+  replaceAll: (r) => editor.findReplaceAll(r),
+  clear: () => editor.findClear(),
+  focusView: () => editor.focus(),
+};
+
+function makeSourceFindTarget(): FindTarget {
+  let query = "";
+  let caseSensitive = false;
+  let positions: number[] = [];
+  let active = 0;
+
+  const recompute = () => {
+    positions = [];
+    if (!query) return;
+    const hay = caseSensitive ? sourceEl.value : sourceEl.value.toLowerCase();
+    const needle = caseSensitive ? query : query.toLowerCase();
+    const stride = Math.max(1, needle.length);
+    let i = hay.indexOf(needle);
+    while (i !== -1) {
+      positions.push(i);
+      i = hay.indexOf(needle, i + stride);
+    }
+    if (active >= positions.length) active = 0;
+  };
+
+  const selectActive = () => {
+    if (!positions.length) return;
+    if (active >= positions.length) active = 0;
+    const start = positions[active];
+    sourceEl.focus();
+    sourceEl.setSelectionRange(start, start + query.length);
+    const lines = sourceEl.value.split("\n");
+    const row = sourceEl.value.slice(0, start).split("\n").length - 1;
+    const lineHeight = sourceEl.scrollHeight / Math.max(1, lines.length);
+    sourceEl.scrollTop = Math.max(
+      0,
+      row * lineHeight - sourceEl.clientHeight / 2,
+    );
+  };
+
+  const status = (): FindStatus => ({
+    count: positions.length,
+    index: positions.length ? active + 1 : 0,
+  });
+
+  return {
+    selectionText: () =>
+      sourceEl.value.slice(sourceEl.selectionStart, sourceEl.selectionEnd),
+    setQuery(q, cs) {
+      query = q;
+      caseSensitive = cs;
+      active = 0;
+      recompute();
+      selectActive();
+      return status();
+    },
+    step(dir) {
+      if (!positions.length) return status();
+      active = (active + dir + positions.length) % positions.length;
+      selectActive();
+      return status();
+    },
+    replace(replacement) {
+      if (!positions.length || !query) return status();
+      if (active >= positions.length) active = 0;
+      const start = positions[active];
+      const current = sourceEl.value.slice(start, start + query.length);
+      const hit = caseSensitive
+        ? current === query
+        : current.toLowerCase() === query.toLowerCase();
+      if (hit) sourceEdit(replacement, start, start + query.length);
+      recompute();
+      selectActive();
+      return status();
+    },
+    replaceAll(replacement) {
+      if (!query) return status();
+      const re = new RegExp(escapeRegExp(query), caseSensitive ? "g" : "gi");
+      const next = sourceEl.value.replace(re, () => replacement);
+      if (next !== sourceEl.value) sourceEdit(next, 0, sourceEl.value.length);
+      active = 0;
+      recompute();
+      return status();
+    },
+    clear() {
+      query = "";
+      positions = [];
+    },
+    focusView: () => sourceEl.focus(),
+  };
+}
+
+const sourceFindTarget = makeSourceFindTarget();
+
+function openFind(withReplace: boolean): void {
+  findBar.bind(() => (sourceMode ? sourceFindTarget : editorFindTarget));
+  findBar.open(withReplace);
+}
+
 // --- wiring --------------------------------------------------------------
 
 function wireShortcuts(): void {
@@ -415,12 +558,18 @@ function wireShortcuts(): void {
       // which stops propagation while it is open.
       if (
         e.key === "Escape" &&
-        settings.quit_on_escape &&
         !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
       ) {
-        e.preventDefault();
-        void quitApp();
-        return;
+        if (findBar.isOpen) {
+          e.preventDefault();
+          findBar.close();
+          return;
+        }
+        if (settings.quit_on_escape) {
+          e.preventDefault();
+          void quitApp();
+          return;
+        }
       }
 
       const mod = e.ctrlKey || e.metaKey;
@@ -447,6 +596,12 @@ function wireShortcuts(): void {
       } else if (e.shiftKey && k === "c") {
         e.preventDefault();
         toggleSource();
+      } else if (k === "f" && !e.shiftKey) {
+        e.preventDefault();
+        openFind(false);
+      } else if (k === "h" && !e.shiftKey) {
+        e.preventDefault();
+        openFind(true);
       }
     },
     { capture: true },
@@ -569,6 +724,11 @@ async function restoreWindow(): Promise<void> {
 }
 
 async function restoreTabs(): Promise<void> {
+  if (settings.open_last_session === false) {
+    tabBar.add(null, "");
+    return;
+  }
+
   const wanted = (settings.open_files ?? []).filter(Boolean);
   const readable: string[] = [];
   for (const f of wanted) {
@@ -591,9 +751,11 @@ async function restoreTabs(): Promise<void> {
 async function bootstrap(): Promise<void> {
   const payload = await invoke<SettingsPayload>("get_settings");
   settings = payload.settings;
+  if (!isListMarker(settings.list_marker)) settings.list_marker = "*";
 
   applyAppearance();
   applyTheme(settings.theme);
+  editor.setListMarker(settings.list_marker);
   onSystemThemeChange(() => {});
 
   // React to hand edits of settings.toml (the file watcher emits this).
@@ -603,6 +765,8 @@ async function bootstrap(): Promise<void> {
     settings.direction = ext.direction;
     settings.spellcheck = ext.spellcheck;
     settings.quit_on_escape = ext.quit_on_escape;
+    settings.show_path = ext.show_path;
+    settings.open_last_session = ext.open_last_session;
     settings.editor_font = ext.editor_font;
     settings.editor_font_size = ext.editor_font_size;
     settings.source_font = ext.source_font;
@@ -612,6 +776,21 @@ async function bootstrap(): Promise<void> {
     applyTheme(settings.theme);
     if (!sourceMode) applyDirection(settings.direction === "rtl" ? "rtl" : "ltr");
     editor.setSpellcheck(settings.spellcheck);
+    updateTitle();
+
+    if (isListMarker(ext.list_marker) && ext.list_marker !== settings.list_marker) {
+      settings.list_marker = ext.list_marker;
+      editor.setListMarker(ext.list_marker);
+      if (!sourceMode) {
+        switching = true;
+        void editor.reload().then(() => {
+          applyDirection(settings.direction === "rtl" ? "rtl" : "ltr");
+          editor.setSpellcheck(settings.spellcheck);
+          switching = false;
+          markDirtyFromView();
+        });
+      }
+    }
   });
 
   if (!payload.portable) {

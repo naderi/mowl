@@ -47,10 +47,13 @@ portable native shell using the OS WebView instead of bundling Chromium.
 | `src/theme.ts` | Resolves `system`/`light`/`dark`, swaps the compiled Crepe theme stylesheet at runtime. |
 | `src/link-clipboard.ts` | ProseMirror `$prose` plugin: paste a URL over a selection / `Ctrl+K` → link it. |
 | `src/block-menu.ts` | The `⠿` block menu (turn‑into, insert, duplicate, delete, table). Raw ProseMirror commands. |
+| `src/markdown-serializer.ts` | `remarkStringifyOptionsCtx` tweaks: bullet‑list marker (`*`/`-`/`+`) and link/image handlers that stop `&` in URLs being escaped. Applied in `Editor.init` via `crepe.editor.config`. |
+| `src/find.ts` | `$prose` plugin for WYSIWYG find: scans text nodes for the query, decorates matches, exposes state via `findKey`. |
+| `src/find-bar.ts` | The find / replace bar UI (`#find-bar`). Backend‑agnostic — `main.ts` hands it a `FindTarget` for the editor or the source textarea. |
 | `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu. Theme tokens on `:root`. |
 | `src-tauri/src/lib.rs` | Tauri builder: plugins (single‑instance first), `AppState`, command registry, `.setup()` spawns the `settings.toml` watcher. `file_arg()` picks a Markdown path out of argv. |
 | `src-tauri/src/commands.rs` | All `#[tauri::command]`s: `get_settings`, `save_settings`, `read_document`, `write_document`, `render_html`. |
-| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (theme, direction, spellcheck, fonts, accent, quit_on_escape) + app‑managed state (window, open tabs, recents). Plus the 1 Hz file watcher + write‑signature tracking. |
+| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (theme, direction, spellcheck, fonts, accent, quit_on_escape, list_marker, show_path, open_last_session) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
 | `src-tauri/src/portable.rs` | Resolves the portable data dir (next to exe; on macOS next to the `.app`); writability check + OS‑config fallback. |
 | `src-tauri/src/export.rs` | `render_html`: Markdown → GFM HTML (comrak) wrapped in a self‑contained page. |
 | `src-tauri/src/mdfmt.rs` | `format_tables`: pretty‑prints GFM tables in a Markdown string. |
@@ -58,6 +61,7 @@ portable native shell using the OS WebView instead of bundling Chromium.
 | `src-tauri/tauri.conf.json` | Window config, bundle config, CSP. |
 | `src-tauri/capabilities/default.json` | Tauri permission allow‑list. **Add a permission here whenever you call a new `window.*` / plugin API.** |
 | `.github/workflows/release.yml` | CI: 5‑target matrix (win x64/arm64, mac universal, linux x64/arm64), `tauri-action`, draft release + checksums. |
+| `scripts/gen-settings-example.mjs` | Writes a fully‑commented `settings.example.toml` next to the built exe. Runs from `build.beforeBuildCommand` (every `tauri dev` / `tauri build`). Keep its key list in sync with `Settings`. |
 
 ---
 
@@ -68,8 +72,9 @@ folder is read‑only, they fall back to the OS config dir and the app shows a
 hint bar.
 
 - **`settings.toml`** — the only settings file. Top half is hand‑editable
-  (theme, direction, spellcheck, fonts, sizes, accent, `quit_on_escape`); bottom
-  half is app‑managed (window geometry, open tabs, recents). The app writes it
+  (theme, direction, spellcheck, fonts, sizes, accent, `quit_on_escape`,
+  `list_marker`, `show_path`, `open_last_session`); bottom
+  half is app‑managed (window geometry, open tabs). The app writes it
   debounced (800 ms) and on quit; a 1 Hz watcher (`settings::watch`) picks up
   **external** edits and emits `settings-changed` → `main.ts` re‑applies theme /
   direction / appearance without a restart. The watcher skips the app's own
@@ -139,6 +144,8 @@ for PDF, loads it into a hidden `<iframe>` and calls `print()`.
 1. `src-tauri/src/settings.rs` → add field to `Settings` + `Default` (the struct
    has `#[serde(default)]`, so old files stay compatible).
 2. `src/main.ts` → add it to the `Settings` interface.
+3. `scripts/gen-settings-example.mjs` → add the key (with a comment) so the
+   shipped `settings.example.toml` documents it. Update README's config block too.
    - **Appearance pref** (font/colour): apply it in `applyAppearance()` as a CSS
      var, and add it to the `settings-changed` merge list so external edits take
      effect live.
