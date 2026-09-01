@@ -11,11 +11,11 @@
 
 Markdown tippen, sofort formatiert sehen — im Typora‑Stil. Mächtig genug für
 echtes Schreiben (Tabellen, Formeln, Code, Fußnoten, RTL), und trotzdem eine
-einzige ~7‑MB‑Anwendung, die sofort startet und nicht im Weg steht.
+einzige \~7‑MB‑Anwendung, die sofort startet und nicht im Weg steht.
 
 [Funktionen](#funktionen) · [Screenshots](#screenshots) · [Download](#download) · [Konfiguration](#konfiguration) · [Selbst bauen](#selbst-bauen)
 
----
+***
 
 ## Warum Mowl
 
@@ -140,35 +140,35 @@ Jede Veröffentlichung bringt außerdem eine vollständig kommentierte
 
 ## Screenshots
 
-| Hell | Dunkel |
-|---|---|
+| Hell                                                               | Dunkel                                           |
+| ------------------------------------------------------------------ | ------------------------------------------------ |
 | ![Mowl beim Bearbeiten eines Dokuments](docs/screenshot-light.png) | ![Mowl im Dunkelmodus](docs/screenshot-dark.png) |
 
-| Rechts‑nach‑links (pro Datei) | Blockmenü |
-|---|---|
+| Rechts‑nach‑links (pro Datei)                              |                        Blockmenü                        |
+| ---------------------------------------------------------- | :-----------------------------------------------------: |
 | ![Dokument von rechts nach links](docs/screenshot-rtl.png) | ![Blockmenü am ⠿-Griff](docs/screenshot-block-menu.png) |
 
 ## Tastenkürzel
 
-| Aktion | Kürzel |
-|---|---|
-| Neuer Tab | `Strg/Cmd+N` |
-| Öffnen | `Strg/Cmd+O` |
-| Speichern | `Strg/Cmd+S` |
-| Speichern unter | `Strg/Cmd+Shift+S` |
-| Tab schließen | `Strg/Cmd+W` |
-| Export (HTML / PDF) | `Strg/Cmd+E` |
-| Quelltextansicht umschalten | `Strg/Cmd+Shift+C` |
-| Suchen | `Strg/Cmd+F` |
-| Ersetzen | `Strg/Cmd+H` |
-| Link aus Zwischenablage | `Strg/Cmd+K` |
-| URL auf markierten Text einfügen | `Strg/Cmd+V` |
+| Aktion                           | Kürzel             |
+| -------------------------------- | ------------------ |
+| Neuer Tab                        | `Strg/Cmd+N`       |
+| Öffnen                           | `Strg/Cmd+O`       |
+| Speichern                        | `Strg/Cmd+S`       |
+| Speichern unter                  | `Strg/Cmd+Shift+S` |
+| Tab schließen                    | `Strg/Cmd+W`       |
+| Export (HTML / PDF)              | `Strg/Cmd+E`       |
+| Quelltextansicht umschalten      | `Strg/Cmd+Shift+C` |
+| Suchen                           | `Strg/Cmd+F`       |
+| Ersetzen                         | `Strg/Cmd+H`       |
+| Link aus Zwischenablage          | `Strg/Cmd+K`       |
+| URL auf markierten Text einfügen | `Strg/Cmd+V`       |
 
 ## Download
 
 Den aktuellen Build gibt es auf der Seite [Releases](../../releases).
 
-- **Windows (x64)** — jetzt verfügbar: portable `Mowl.exe` (~7 MB, ohne
+- **Windows (x64)** — jetzt verfügbar: portable `Mowl.exe` (\~7 MB, ohne
   Installation) oder der NSIS‑Installer
 - **macOS** (x64 + arm64) und **Linux** (x64 + arm64 AppImage) — *demnächst.*
   Die plattformübergreifende Release‑Pipeline steht bereits
@@ -239,12 +239,12 @@ Einstellungen und Kommandos hinzufügt.
 
 ## Technik‑Stack
 
-| Ebene | Wahl |
-|---|---|
-| Hülle | [Tauri v2](https://tauri.app) (Rust, System‑WebView) |
-| Editor | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
-| Markdown → HTML‑Export | [`comrak`](https://github.com/kivikakk/comrak) (Rust) |
-| Formeln | [KaTeX](https://katex.org) |
+| Ebene                  | Wahl                                                    |
+| ---------------------- | ------------------------------------------------------- |
+| Hülle                  | [Tauri v2](https://tauri.app) (Rust, System‑WebView)    |
+| Editor                 | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
+| Markdown → HTML‑Export | [`comrak`](https://github.com/kivikakk/comrak) (Rust)   |
+| Formeln                | [KaTeX](https://katex.org)                              |
 
 ## Unterstützung
 

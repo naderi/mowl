@@ -7,12 +7,12 @@
 **A minimalist, portable WYSIWYG Markdown editor.**
 
 Type Markdown, see it formatted inline — Typora‑style. Powerful enough for real
-writing (tables, math, code, footnotes, RTL), yet a single ~7 MB executable that
+writing (tables, math, code, footnotes, RTL), yet a single \~7 MB executable that
 starts instantly and stays out of your way.
 
 [Features](#features) · [Screenshots](#screenshots) · [Download](#download) · [Configuration](#configuration) · [Building](#building)
 
----
+***
 
 ## Why Mowl
 
@@ -123,35 +123,35 @@ you so in the window. Every release also ships a fully commented
 
 ## Screenshots
 
-| Light | Dark |
-|---|---|
+| Light                                                 | Dark                                           |
+| ----------------------------------------------------- | ---------------------------------------------- |
 | ![Mowl editing a document](docs/screenshot-light.png) | ![Mowl in dark mode](docs/screenshot-dark.png) |
 
-| Right‑to‑left (per file) | Block menu |
-|---|---|
+| Right‑to‑left (per file)                           |                          Block menu                           |
+| -------------------------------------------------- | :-----------------------------------------------------------: |
 | ![Right‑to‑left document](docs/screenshot-rtl.png) | ![Block menu on the ⠿ handle](docs/screenshot-block-menu.png) |
 
 ## Keyboard shortcuts
 
-| Action | Shortcut |
-|---|---|
-| New tab | `Ctrl/Cmd+N` |
-| Open | `Ctrl/Cmd+O` |
-| Save | `Ctrl/Cmd+S` |
-| Save As | `Ctrl/Cmd+Shift+S` |
-| Close tab | `Ctrl/Cmd+W` |
-| Export (HTML / PDF) | `Ctrl/Cmd+E` |
-| Toggle source view | `Ctrl/Cmd+Shift+C` |
-| Find | `Ctrl/Cmd+F` |
-| Replace | `Ctrl/Cmd+H` |
-| Link from clipboard | `Ctrl/Cmd+K` |
-| Paste URL onto selected text | `Ctrl/Cmd+V` |
+| Action                       | Shortcut           |
+| ---------------------------- | ------------------ |
+| New tab                      | `Ctrl/Cmd+N`       |
+| Open                         | `Ctrl/Cmd+O`       |
+| Save                         | `Ctrl/Cmd+S`       |
+| Save As                      | `Ctrl/Cmd+Shift+S` |
+| Close tab                    | `Ctrl/Cmd+W`       |
+| Export (HTML / PDF)          | `Ctrl/Cmd+E`       |
+| Toggle source view           | `Ctrl/Cmd+Shift+C` |
+| Find                         | `Ctrl/Cmd+F`       |
+| Replace                      | `Ctrl/Cmd+H`       |
+| Link from clipboard          | `Ctrl/Cmd+K`       |
+| Paste URL onto selected text | `Ctrl/Cmd+V`       |
 
 ## Download
 
 Grab the latest build from the [Releases](../../releases) page.
 
-- **Windows (x64)** — available now: portable `Mowl.exe` (~7 MB, no install) or
+- **Windows (x64)** — available now: portable `Mowl.exe` (\~7 MB, no install) or
   the NSIS installer
 - **macOS** (x64 + arm64) and **Linux** (x64 + arm64 AppImage) — *coming soon.*
   The cross‑platform release pipeline is in place
@@ -219,12 +219,12 @@ and shows how to add toolbar buttons, block‑menu items, settings and commands.
 
 ## Tech stack
 
-| Layer | Choice |
-|---|---|
-| Shell | [Tauri v2](https://tauri.app) (Rust, system WebView) |
-| Editor | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
-| Markdown → HTML export | [`comrak`](https://github.com/kivikakk/comrak) (Rust) |
-| Math | [KaTeX](https://katex.org) |
+| Layer                  | Choice                                                  |
+| ---------------------- | ------------------------------------------------------- |
+| Shell                  | [Tauri v2](https://tauri.app) (Rust, system WebView)    |
+| Editor                 | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
+| Markdown → HTML export | [`comrak`](https://github.com/kivikakk/comrak) (Rust)   |
+| Math                   | [KaTeX](https://katex.org)                              |
 
 ## Support
 

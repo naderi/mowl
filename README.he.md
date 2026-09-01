@@ -12,7 +12,7 @@
 (טבלאות, נוסחאות, קוד, הערות שוליים, כיווניות מימין לשמאל), ועדיין קובץ הרצה יחיד
 של כ־7 מ״ב שנפתח מיד ולא עומד לך בדרך.
 
----
+***
 
 ## למה Mowl
 
@@ -119,35 +119,35 @@
 
 ## Screenshots
 
-| בהיר | כהה |
-|---|---|
+| בהיר                                           | כהה                                        |
+| ---------------------------------------------- | ------------------------------------------ |
 | ![Mowl בעריכת מסמך](docs/screenshot-light.png) | ![Mowl במצב כהה](docs/screenshot-dark.png) |
 
-| מימין לשמאל (לכל קובץ) | תפריט הבלוק |
-|---|---|
+| מימין לשמאל (לכל קובץ)                       |                        תפריט הבלוק                        |
+| -------------------------------------------- | :-------------------------------------------------------: |
 | ![מסמך מימין לשמאל](docs/screenshot-rtl.png) | ![תפריט הבלוק על הידית ⠿](docs/screenshot-block-menu.png) |
 
 ## קיצורי מקלדת
 
-| פעולה | קיצור |
-|---|---|
-| לשונית חדשה | `Ctrl/Cmd+N` |
-| פתיחה | `Ctrl/Cmd+O` |
-| שמירה | `Ctrl/Cmd+S` |
-| שמירה בשם | `Ctrl/Cmd+Shift+S` |
-| סגירת לשונית | `Ctrl/Cmd+W` |
-| ייצוא (HTML / PDF) | `Ctrl/Cmd+E` |
-| החלפת תצוגת מקור | `Ctrl/Cmd+Shift+C` |
-| חיפוש | `Ctrl/Cmd+F` |
-| החלפה | `Ctrl/Cmd+H` |
-| קישור מהלוח | `Ctrl/Cmd+K` |
-| הדבקת כתובת על טקסט מסומן | `Ctrl/Cmd+V` |
+| פעולה                     | קיצור              |
+| ------------------------- | ------------------ |
+| לשונית חדשה               | `Ctrl/Cmd+N`       |
+| פתיחה                     | `Ctrl/Cmd+O`       |
+| שמירה                     | `Ctrl/Cmd+S`       |
+| שמירה בשם                 | `Ctrl/Cmd+Shift+S` |
+| סגירת לשונית              | `Ctrl/Cmd+W`       |
+| ייצוא (HTML / PDF)        | `Ctrl/Cmd+E`       |
+| החלפת תצוגת מקור          | `Ctrl/Cmd+Shift+C` |
+| חיפוש                     | `Ctrl/Cmd+F`       |
+| החלפה                     | `Ctrl/Cmd+H`       |
+| קישור מהלוח               | `Ctrl/Cmd+K`       |
+| הדבקת כתובת על טקסט מסומן | `Ctrl/Cmd+V`       |
 
 ## Download
 
 הורד את הגרסה האחרונה מדף ה־[Releases](../../releases).
 
-- **Windows (x64)** — זמין עכשיו: `Mowl.exe` נייד (~7 מ״ב, בלי התקנה) או מתקין
+- **Windows (x64)** — זמין עכשיו: `Mowl.exe` נייד (\~7 מ״ב, בלי התקנה) או מתקין
   NSIS
 - **macOS** (x64 + arm64) ו־**Linux** (x64 + arm64 בפורמט AppImage) — *בקרוב.*
   צינור הגרסאות הרב־פלטפורמי כבר קיים
@@ -214,12 +214,12 @@ cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
 
 ## מחסנית טכנולוגית
 
-| שכבה | בחירה |
-|---|---|
-| מעטפת | [Tauri v2](https://tauri.app) (Rust, WebView של המערכת) |
-| עורך | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
-| ייצוא Markdown ← HTML | [`comrak`](https://github.com/kivikakk/comrak) (Rust) |
-| נוסחאות | [KaTeX](https://katex.org) |
+| שכבה                  | בחירה                                                   |
+| --------------------- | ------------------------------------------------------- |
+| מעטפת                 | [Tauri v2](https://tauri.app) (Rust, WebView של המערכת) |
+| עורך                  | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
+| ייצוא Markdown ← HTML | [`comrak`](https://github.com/kivikakk/comrak) (Rust)   |
+| נוסחאות               | [KaTeX](https://katex.org)                              |
 
 ## תמיכה
 
