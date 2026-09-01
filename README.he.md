@@ -123,6 +123,10 @@
 |---|---|
 | ![Mowl בעריכת מסמך](docs/screenshot-light.png) | ![Mowl במצב כהה](docs/screenshot-dark.png) |
 
+מימין לשמאל לכל קובץ (עברית / פרסית / ערבית):
+
+![מסמך מימין לשמאל](docs/screenshot-rtl.png)
+
 <p align="center"><img src="docs/screenshot-block-menu.png" alt="תפריט הבלוק על הידית ⠿" width="240"></p>
 
 ## קיצורי מקלדת

@@ -144,6 +144,10 @@ Jede Veröffentlichung bringt außerdem eine vollständig kommentierte
 |---|---|
 | ![Mowl beim Bearbeiten eines Dokuments](docs/screenshot-light.png) | ![Mowl im Dunkelmodus](docs/screenshot-dark.png) |
 
+Rechts‑nach‑links pro Datei (Persisch / Arabisch / Hebräisch):
+
+![Dokument von rechts nach links](docs/screenshot-rtl.png)
+
 <p align="center"><img src="docs/screenshot-block-menu.png" alt="Blockmenü am ⠿-Griff" width="240"></p>
 
 ## Tastenkürzel

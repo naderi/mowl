@@ -126,6 +126,10 @@
 |---|---|
 | ![Mowl أثناء تحرير مستند](docs/screenshot-light.png) | ![Mowl في الوضع الداكن](docs/screenshot-dark.png) |
 
+الكتابة من اليمين إلى اليسار لكلّ ملفّ (العربية / الفارسية / العبرية):
+
+![مستند من اليمين إلى اليسار](docs/screenshot-rtl.png)
+
 <p align="center"><img src="docs/screenshot-block-menu.png" alt="قائمة الكتلة على المقبض ⠿" width="240"></p>
 
 ## اختصارات لوحة المفاتيح

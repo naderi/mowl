@@ -127,6 +127,10 @@ you so in the window. Every release also ships a fully commented
 |---|---|
 | ![Mowl editing a document](docs/screenshot-light.png) | ![Mowl in dark mode](docs/screenshot-dark.png) |
 
+Per‑file right‑to‑left (Persian / Arabic / Hebrew):
+
+![Right‑to‑left document](docs/screenshot-rtl.png)
+
 <p align="center"><img src="docs/screenshot-block-menu.png" alt="Block menu on the ⠿ handle" width="240"></p>
 
 ## Keyboard shortcuts
