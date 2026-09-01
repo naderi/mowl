@@ -1,0 +1,228 @@
+![Mowl](docs/logo.png)
+
+[English](README.md) · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · **עברית**
+
+> ℹ️ תרגום זה נוצר אוטומטית. הגרסה הקובעת היא ה־[README באנגלית](README.md).
+
+# Mowl
+
+**עורך Markdown מינימליסטי, נייד ו־WYSIWYG.**
+
+מקלידים Markdown ורואים אותו מעוצב מיד — בסגנון Typora. חזק מספיק לכתיבה אמיתית
+(טבלאות, נוסחאות, קוד, הערות שוליים, כיווניות מימין לשמאל), ועדיין קובץ הרצה יחיד
+של כ־7 מ״ב שנפתח מיד ולא עומד לך בדרך.
+
+---
+
+## למה Mowl
+
+- **חזק יותר משנדמה.** עריכה חיה (WYSIWYG), מסמכים בלשוניות, תפריט בלוק, טבלאות
+  GFM עם גרירה לסידור מחדש, נוסחאות KaTeX, קוד עם צביעת תחביר, חיפוש והחלפה,
+  תמיכה בכתיבה מימין לשמאל, וייצוא HTML/PDF עצמאי.
+- **רזה במיוחד.** בלי Electron. Mowl בנוי על [Tauri](https://tauri.app) ועל
+  ה־WebView של מערכת ההפעלה שלך, כך שכל היישום הוא **קובץ הרצה נייד יחיד של כ־7
+  מ״ב** — בלי מתקין, בלי מה לחלץ, בלי שירותי רקע.
+- **מהיר באמת.** הליבה היא Rust, החלון מקורי, והפעלה קרה מיידית למעשה. זה מרגיש
+  כמו עורך טקסט, לא כמו יישום ווב.
+- **נייד מיסודו.** קובץ `settings.toml` יחיד הניתן לעריכה ידנית יושב ליד קובץ
+  ההרצה. העבר את `Mowl.exe` לזיכרון נייד וההעדפות שלך נוסעות איתו.
+
+## תכונות
+
+### ✍️ עריכה חיה WYSIWYG
+
+מונע על ידי [Milkdown Crepe](https://milkdown.dev) (ProseMirror). כותרות, מודגש,
+רשימות, ציטוטים והשאר מתעצבים תוך כדי הקלדה — אך המסמך בכונן תמיד נשאר Markdown
+פשוט ונייד.
+
+### 🔗 קישורים בלי להתעסק בתחביר
+
+בחר טקסט, ואז **הדבק כתובת עם `Ctrl/Cmd+V`** — הבחירה הופכת לטקסט הקישור והכתובת
+שהודבקה הופכת ליעד שלו. בלי להקליד `[]()`, בלי חלון. מעדיף מקלדת? בחר טקסט ולחץ
+**`Ctrl/Cmd+K`** כדי להפוך אותו לקישור עם הכתובת שבלוח (או קישור ריק למילוי).
+
+### 🖼️ תמונות שפשוט מופיעות
+
+`![alt](picture.png)` מוצג ישירות בעורך, כולל **נתיבים יחסיים** שמתפענחים ביחס
+לתיקייה של המסמך עצמו (`./assets/diagram.png`, `../shared/logo.svg`) ונתיבים
+מקומיים מוחלטים — לא רק כתובות `http(s)`. הוסף אחת מתפריט הבלוק `⠿` («Image»), ואז
+הדבק קישור או בחר קובץ.
+
+### ↔️ תמיכה בכתיבה מימין לשמאל
+
+כיוון הכתיבה הוא **לכל קובץ בנפרד**: לחיצה אחת מחליפה את המסמך הפעיל בין
+**משמאל‑לימין ומימין‑לשמאל** — לכתיבה בפרסית, ערבית או עברית. בעת הפתיחה הכיוון
+מזוהה מהתוכן (התו הכיווני הראשון). בלוקי קוד תמיד נשארים משמאל לימין — גם בתוך
+מסמך מימין לשמאל — והכיוון עובר גם לייצוא ה־HTML (`<html dir="rtl">`).
+
+### 🧱 תפריט בלוק
+
+רחף מעל בלוק כלשהו ולחץ על הידית `⠿` לתפריט מהיר שפועל על אותו בלוק:
+
+- **הפוך ל־** — טקסט, כותרת 1–3, רשימת תבליטים, רשימה ממוספרת, ציטוט, בלוק קוד או
+  **טבלה**
+- **הוסף** טבלה, תמונה, קו מפריד או שורה ריקה מעל/מתחת
+- **שכפל** או **מחק** את הבלוק
+
+סוג הבלוק הנוכחי מודגש כך שתמיד תדע מה אתה עורך.
+
+### 📑 לשוניות עם שחזור הפעלה
+
+פתח כמה מסמכים בלשוניות. סגור את Mowl, פתח שוב, והלשוניות שלך — ואפילו מיקומי
+הגלילה שלהן — חוזרות. (ניתן לכיבוי בהגדרות.)
+
+### 👁️ תצוגת מקור
+
+החלף בין העורך העשיר ל־**Markdown הגולמי** באזור טקסט פשוט עם `Ctrl/Cmd+Shift+C`.
+`Tab` / `Shift+Tab` מזיזים פנימה והחוצה את השורות המסומנות, והביטול המקורי ממשיך
+לעבוד. מיקום הקריאה נשמר בעת המעבר.
+
+### 🔍 חיפוש והחלפה
+
+`Ctrl/Cmd+F` לחיפוש, `Ctrl/Cmd+H` להחלפה — עובד גם בעורך WYSIWYG וגם בתצוגת המקור.
+
+### 📊 טבלאות שמתנהגות יפה
+
+טבלאות GitHub‑Flavored Markdown מלאות. **גרור שורות ועמודות** כדי לסדר אותן מחדש,
+הוסף טבלה ישירות מתפריט הבלוק, וטבלאות שהוקלדו ידנית מיושרות וממולאות אוטומטית
+בקובץ ה־`.md` השמור כך ש־Markdown הגולמי נשאר קריא.
+
+### 🧮 נוסחאות ו־💻 קוד
+
+- נוסחאות **KaTeX**, בשורה (`$…$`) ובתצוגה (`$$…$$`)
+- **בלוקי קוד** עם צביעת תחביר וזיהוי שפה
+
+בנוסף לשאר GFM: רשימות משימות, הערות שוליים, קו חוצה, קישורים אוטומטיים.
+
+### 📤 ייצוא
+
+- **HTML עצמאי** — קובץ יחיד עם סגנונות KaTeX וצביעה מוטמעים, אין מה לארח. תמונות
+  מקומיות מוטמעות כ־data‑URL.
+- **PDF** דרך חלון ההדפסה של המערכת
+
+### 🎨 ערכות נושא ומראה
+
+ערכת נושא בהירה וכהה שעוקבת אחר מערכת ההפעלה כברירת מחדל, עם מתג ידני. גופן העורך,
+גודל הגופן, גופן תצוגת המקור וצבע ההדגשה — כולם ניתנים להגדרה.
+
+### 🗂️ שיוך קבצים
+
+הגדר את Mowl כיישום ברירת המחדל לקבצי `.md` / `.markdown` (דרך המתקין). לחיצה
+כפולה על קובץ Markdown פותחת אותו בלשונית חדשה בחלון הפעיל.
+
+### 💾 הגדרה ניידת
+
+קובץ `settings.toml` יחיד ומתועד בהערות ליד קובץ ההרצה. ערוך אותו בכל עורך טקסט
+ו־Mowl **קולט את השינוי תוך שנייה — בלי הפעלה מחדש**. אם תיקיית התוכנית לקריאה
+בלבד, Mowl נסוג לתיקיית ההגדרות של מערכת ההפעלה ומודיע לך על כך בחלון. כל גרסה
+מגיעה גם עם `settings.example.toml` מתועד במלואו כהפניה.
+
+## Screenshots
+
+| בהיר | כהה |
+|---|---|
+| ![Mowl בעריכת מסמך](docs/screenshot-light.png) | ![Mowl במצב כהה](docs/screenshot-dark.png) |
+
+<p align="center"><img src="docs/screenshot-block-menu.png" alt="תפריט הבלוק על הידית ⠿" width="240"></p>
+
+## קיצורי מקלדת
+
+| פעולה | קיצור |
+|---|---|
+| לשונית חדשה | `Ctrl/Cmd+N` |
+| פתיחה | `Ctrl/Cmd+O` |
+| שמירה | `Ctrl/Cmd+S` |
+| שמירה בשם | `Ctrl/Cmd+Shift+S` |
+| סגירת לשונית | `Ctrl/Cmd+W` |
+| ייצוא (HTML / PDF) | `Ctrl/Cmd+E` |
+| החלפת תצוגת מקור | `Ctrl/Cmd+Shift+C` |
+| חיפוש | `Ctrl/Cmd+F` |
+| החלפה | `Ctrl/Cmd+H` |
+| קישור מהלוח | `Ctrl/Cmd+K` |
+| הדבקת כתובת על טקסט מסומן | `Ctrl/Cmd+V` |
+
+## Download
+
+הורד את הגרסה האחרונה מדף ה־[Releases](../../releases).
+
+- **Windows (x64)** — זמין עכשיו: `Mowl.exe` נייד (~7 מ״ב, בלי התקנה) או מתקין
+  NSIS
+- **macOS** (x64 + arm64) ו־**Linux** (x64 + arm64 בפורמט AppImage) — *בקרוב.*
+  צינור הגרסאות הרב־פלטפורמי כבר קיים
+  ([`.github/workflows/release.yml`](.github/workflows/release.yml)); הבנייות
+  האלה יגיעו עם גרסה מתויגת עתידית. עד אז, בנה מהמקור על פלטפורמת היעד
+  (חלק [Building](README.md#building)) — Mowl הוא יישום Tauri ורץ על שלושתן.
+
+הבנייות **אינן חתומות** או מאושרות, כך שמערכת ההפעלה עשויה להזהיר בהפעלה הראשונה:
+
+- **Windows** — SmartScreen: *More info → Run anyway*
+- **macOS** — לחיצה ימנית על היישום → *Open*, או
+  `xattr -dr com.apple.quarantine /path/to/Mowl.app`
+- **Linux** — `chmod +x Mowl*.AppImage` והרצה
+
+עם כל גרסה מתפרסמים סכומי ביקורת SHA‑256.
+
+## הגדרה
+
+`settings.toml` יושב ליד קובץ ההרצה (ב־macOS: ליד חבילת ה־`.app`), או בתיקיית
+ההגדרות של מערכת ההפעלה כחלופה. החלק העליון מיועד לעריכה ידנית ונטען מחדש בזמן
+אמת (הערות ה־`#` נשארות באנגלית, כמו בקובץ):
+
+```toml
+theme = "system"            # system | light | dark
+direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
+spellcheck = true
+quit_on_escape = false      # press Esc to quit
+list_marker = "*"           # bullet-list marker on save: * | - | +
+show_path = false           # show the full file path in the header, not just the name
+open_last_session = true    # reopen the previous session's tabs on startup
+editor_font = ""            # WYSIWYG font family (blank = default)
+editor_font_size = 16       # headings scale from this
+source_font = ""            # Markdown source font (monospace)
+source_font_size = 15
+accent = ""                 # accent colour, e.g. "#0969da"
+
+# below this line: managed by the app — window geometry, open tabs, per-file direction
+```
+
+## בנייה מהמקור
+
+דרישות מוקדמות:
+
+- Rust (גרסת stable; שרשרת כלים MSVC ב־Windows) — <https://rustup.rs>
+- Node 20+ ו־`pnpm`
+- תלויות WebView של הפלטפורמה — <https://tauri.app/start/prerequisites/>
+
+```bash
+pnpm install
+pnpm tauri dev                       # run with hot reload
+pnpm tauri build                     # release bundles for the host OS
+pnpm tauri build --bundles nsis      # Windows: installer + portable exe
+pnpm exec tsc --noEmit               # frontend typecheck
+cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
+```
+
+**חיתוך גרסה:** העלה את `version` ב־**שני** הקבצים `package.json` ו־
+`src-tauri/tauri.conf.json`, ואז דחוף תג `v*` — `.github/workflows/release.yml`
+בונה את Windows / macOS / Linux (x64 + arm64) ופותח טיוטת גרסה ב־GitHub עם סכומי
+ביקורת.
+
+מרחיב את Mowl? קרא את **[ARCHITECTURE.md](ARCHITECTURE.md)** — הוא ממפה כל קובץ
+ומראה איך להוסיף כפתורי סרגל כלים, פריטי תפריט בלוק, הגדרות ופקודות.
+
+## מחסנית טכנולוגית
+
+| שכבה | בחירה |
+|---|---|
+| מעטפת | [Tauri v2](https://tauri.app) (Rust, WebView של המערכת) |
+| עורך | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
+| ייצוא Markdown ← HTML | [`comrak`](https://github.com/kivikakk/comrak) (Rust) |
+| נוסחאות | [KaTeX](https://katex.org) |
+
+## תמיכה
+
+אם Mowl חוסך לך זמן, אפשר לתמוך בפיתוח שלו ב־[Ko‑fi](https://ko-fi.com/naderi). ☕
+
+## רישיון
+
+MIT

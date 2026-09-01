@@ -1,5 +1,7 @@
 ![Mowl](docs/logo.png)
 
+**English** · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
+
 # Mowl
 
 **A minimalist, portable WYSIWYG Markdown editor.**
@@ -221,6 +223,11 @@ and shows how to add toolbar buttons, block‑menu items, settings and commands.
 | Editor | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
 | Markdown → HTML export | [`comrak`](https://github.com/kivikakk/comrak) (Rust) |
 | Math | [KaTeX](https://katex.org) |
+
+## Support
+
+If Mowl saves you time, you can support its development on
+[Ko‑fi](https://ko-fi.com/naderi). ☕
 
 ## Licence
 
