@@ -133,11 +133,9 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 |---|---|
 | ![Mowl هنگام ویرایش یک سند](docs/screenshot-light.png) | ![Mowl در حالت تیره](docs/screenshot-dark.png) |
 
-راست‌به‌چپ برای هر فایل (فارسی / عربی / عبری):
-
-![سند راست‌به‌چپ](docs/screenshot-rtl.png)
-
-<p align="center"><img src="docs/screenshot-block-menu.png" alt="منوی بلوک روی دستگیرهٔ ⠿" width="240"></p>
+| راست‌به‌چپ (برای هر فایل) | منوی بلوک |
+|---|---|
+| ![سند راست‌به‌چپ](docs/screenshot-rtl.png) | <img src="docs/screenshot-block-menu.png" alt="منوی بلوک روی دستگیرهٔ ⠿" width="240"> |
 
 ## میان‌برهای صفحه‌کلید
 
