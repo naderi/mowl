@@ -250,9 +250,10 @@ Einstellungen und Kommandos hinzufügt.
 
 ## Unterstützung
 
-Wenn Mowl dir Zeit spart, kannst du die Entwicklung auf
-[Ko‑fi](https://ko-fi.com/naderi) unterstützen. ☕
+Wenn Mowl dir Zeit spart, kannst du die Entwicklung auf Ko‑fi unterstützen. ☕
+
+<a href='https://ko-fi.com/N7N123QIX0' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 ## Lizenz
 
-MIT
+[MIT](LICENSE.md)
