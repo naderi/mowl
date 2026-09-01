@@ -121,16 +121,11 @@ you so in the window. Every release also ships a fully commented
 
 ## Screenshots
 
-> Screenshots live in [`docs/`](docs/). Drop the PNGs referenced below into that
-> folder and they'll render here.
-
-| Editing | Dark theme |
+| Light | Dark |
 |---|---|
 | ![Mowl editing a document](docs/screenshot-light.png) | ![Mowl in dark mode](docs/screenshot-dark.png) |
 
-| Block menu | Right‑to‑left |
-|---|---|
-| ![Block menu on the ⠿ handle](docs/screenshot-block-menu.png) | ![RTL document](docs/screenshot-rtl.png) |
+<p align="center"><img src="docs/screenshot-block-menu.png" alt="Block menu on the ⠿ handle" width="240"></p>
 
 ## Keyboard shortcuts
 

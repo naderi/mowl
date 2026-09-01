@@ -20,6 +20,7 @@ interface WindowState {
 
 interface Settings {
   theme: ThemePref;
+  /** Default writing direction for new tabs; per-file direction lives on each tab. */
   direction: "ltr" | "rtl";
   spellcheck: boolean;
   quit_on_escape: boolean;
@@ -35,6 +36,8 @@ interface Settings {
   source_font_size: number;
   accent: string;
   open_files: string[];
+  /** "ltr"/"rtl" per open_files entry — restores per-file direction. */
+  open_dirs: ("ltr" | "rtl")[];
   active_tab: number;
   window: WindowState;
 }
@@ -138,10 +141,27 @@ function updateDirButtons(): void {
 }
 
 function setDirection(dir: "ltr" | "rtl"): void {
-  if (sourceMode || settings.direction === dir) return;
-  settings.direction = dir;
+  const tab = tabBar.active;
+  if (sourceMode || !tab || tab.direction === dir) return;
+  tab.direction = dir;
   applyDirection(dir);
   persistSoon();
+}
+
+/** Guess a document's writing direction from its first strong-directional
+ *  character (the Unicode bidi "first strong" heuristic). Cheap: stops at the
+ *  first letter and only scans the head of the document. */
+// Hebrew + Arabic (base, supplement, extended-A, presentation forms A/B).
+const RTL_CHAR =
+  /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFB4F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+// Latin + Latin-1/Extended + Greek + Cyrillic.
+const LTR_CHAR = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]/;
+function detectDirection(text: string): "ltr" | "rtl" {
+  for (const ch of text.slice(0, 4000)) {
+    if (RTL_CHAR.test(ch)) return "rtl";
+    if (LTR_CHAR.test(ch)) return "ltr";
+  }
+  return settings?.direction === "rtl" ? "rtl" : "ltr";
 }
 
 function stem(path: string | null): string {
@@ -159,7 +179,9 @@ function updateTitle(): void {
 }
 
 function persistSoon(): void {
-  settings.open_files = tabBar.tabs.filter((t) => t.path).map((t) => t.path as string);
+  const withPath = tabBar.tabs.filter((t) => t.path);
+  settings.open_files = withPath.map((t) => t.path as string);
+  settings.open_dirs = withPath.map((t) => t.direction);
   const activePath = tabBar.active?.path ?? null;
   const idx = activePath ? settings.open_files.indexOf(activePath) : -1;
   settings.active_tab = idx < 0 ? 0 : idx;
@@ -211,7 +233,7 @@ tabBar.onActivate = (next: Tab, prev: Tab | null) => {
   writeView(next.content, next.scrollTop);
   adoptNormalized(next);
   editor.setSpellcheck(settings.spellcheck);
-  editor.setDirection(settings.direction);
+  applyDirection(next.direction);
   updateTitle();
   (sourceMode ? sourceEl : editor).focus();
   persistSoon();
@@ -272,7 +294,7 @@ sourceEl.addEventListener("keydown", (e) => {
 // --- file operations -------------------------------------------------------
 
 function newTab(): void {
-  tabBar.add(null, "");
+  tabBar.add(null, "", true, settings.direction === "rtl" ? "rtl" : "ltr");
 }
 
 async function openPath(path: string): Promise<void> {
@@ -290,22 +312,24 @@ async function openPath(path: string): Promise<void> {
     return;
   }
 
+  const dir = detectDirection(text);
   const cur = tabBar.active;
   if (cur && !cur.path && !cur.dirty && cur.content === "") {
     cur.path = path;
     cur.saved = text;
     cur.content = text;
     cur.dirty = false;
+    cur.direction = dir;
     editor.setDocPath(path);
     writeView(text);
     adoptNormalized(cur);
     tabBar.render();
     editor.setSpellcheck(settings.spellcheck);
-    editor.setDirection(settings.direction);
+    applyDirection(dir);
     (sourceMode ? sourceEl : editor).focus();
     updateTitle();
   } else {
-    tabBar.add(path, text); // triggers onActivate -> editor.setContent
+    tabBar.add(path, text, true, dir); // triggers onActivate -> editor.setContent
   }
 
   persistSoon();
@@ -386,7 +410,8 @@ async function exportHtml(): Promise<void> {
     const html = await invoke<string>("render_html", {
       markdown: readView(),
       title: stem(tab?.path ?? null),
-      dir: settings.direction,
+      dir: tab?.direction ?? "ltr",
+      docPath: tab?.path ?? null,
     });
     await invoke("write_document", { path: dest, contents: html });
     await message("HTML exported.", { title: "Mowl" });
@@ -400,7 +425,8 @@ async function exportPdf(): Promise<void> {
   const html = await invoke<string>("render_html", {
     markdown: readView(),
     title: stem(tab?.path ?? null),
-    dir: settings.direction,
+    dir: tab?.direction ?? "ltr",
+    docPath: tab?.path ?? null,
   });
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
@@ -629,6 +655,43 @@ function wireAbout(): void {
   });
 }
 
+// --- open menu (New / Open) -------------------------------------------
+
+const openMenuEl = document.getElementById("open-menu") as HTMLElement;
+
+function closeOpenMenu(): void {
+  openMenuEl.hidden = true;
+}
+
+function wireOpenMenu(): void {
+  const btn = document.getElementById("btn-open");
+  if (!btn) return;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!openMenuEl.hidden) {
+      closeOpenMenu();
+      return;
+    }
+    const r = btn.getBoundingClientRect();
+    openMenuEl.style.left = `${Math.round(r.left)}px`;
+    openMenuEl.style.top = `${Math.round(r.bottom + 4)}px`;
+    openMenuEl.hidden = false;
+  });
+  openMenuEl.addEventListener("click", (e) => {
+    const act = (e.target as HTMLElement).closest<HTMLElement>("button[data-act]")
+      ?.dataset.act;
+    closeOpenMenu();
+    if (act === "new") newTab();
+    else if (act === "open") void openDialog();
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (openMenuEl.hidden) return;
+    const t = e.target as HTMLElement;
+    if (!openMenuEl.contains(t) && !t.closest("#btn-open")) closeOpenMenu();
+  });
+  window.addEventListener("resize", closeOpenMenu);
+}
+
 // --- wiring --------------------------------------------------------------
 
 function wireShortcuts(): void {
@@ -641,6 +704,11 @@ function wireShortcuts(): void {
         e.key === "Escape" &&
         !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
       ) {
+        if (!openMenuEl.hidden) {
+          e.preventDefault();
+          closeOpenMenu();
+          return;
+        }
         if (!aboutEl.hidden) {
           e.preventDefault();
           closeAbout();
@@ -695,7 +763,7 @@ function wireShortcuts(): void {
 }
 
 function wireButtons(): void {
-  document.getElementById("btn-open")?.addEventListener("click", () => void openDialog());
+  // #btn-open opens a small New / Open menu — see wireOpenMenu().
   document.getElementById("btn-save")?.addEventListener("click", () => void saveDoc());
   document.getElementById("btn-export")?.addEventListener("click", () => void chooseExport());
   document.getElementById("btn-source")?.addEventListener("click", () => toggleSource());
@@ -816,10 +884,14 @@ async function restoreTabs(): Promise<void> {
     return;
   }
 
-  const wanted = (settings.open_files ?? []).filter(Boolean);
-  const readable: string[] = [];
-  for (const f of wanted) {
-    if (await fileReadable(f)) readable.push(f);
+  const files = settings.open_files ?? [];
+  const dirs = settings.open_dirs ?? [];
+  const readable: { path: string; dir: "ltr" | "rtl" | null }[] = [];
+  for (let i = 0; i < files.length; i++) {
+    if (files[i] && (await fileReadable(files[i]))) {
+      const d = dirs[i];
+      readable.push({ path: files[i], dir: d === "ltr" || d === "rtl" ? d : null });
+    }
   }
 
   if (readable.length === 0) {
@@ -827,9 +899,9 @@ async function restoreTabs(): Promise<void> {
     return;
   }
 
-  for (const f of readable) {
-    const text = await invoke<string>("read_document", { path: f });
-    tabBar.add(f, text, false);
+  for (const { path, dir } of readable) {
+    const text = await invoke<string>("read_document", { path });
+    tabBar.add(path, text, false, dir ?? detectDirection(text));
   }
   const idx = Math.min(Math.max(settings.active_tab ?? 0, 0), readable.length - 1);
   tabBar.activate(tabBar.tabs[idx].id);
@@ -862,7 +934,9 @@ async function bootstrap(): Promise<void> {
     applyAppearance();
     applyTheme(settings.theme);
     updateThemeButton();
-    if (!sourceMode) applyDirection(settings.direction === "rtl" ? "rtl" : "ltr");
+    // `direction` in settings.toml is only the default for new tabs now; the
+    // active document keeps its own direction. Just refresh the buttons.
+    if (!sourceMode) applyDirection(tabBar.active?.direction ?? "ltr");
     editor.setSpellcheck(settings.spellcheck);
     updateTitle();
 
@@ -872,7 +946,7 @@ async function bootstrap(): Promise<void> {
       if (!sourceMode) {
         switching = true;
         void editor.reload().then(() => {
-          applyDirection(settings.direction === "rtl" ? "rtl" : "ltr");
+          applyDirection(tabBar.active?.direction ?? "ltr");
           editor.setSpellcheck(settings.spellcheck);
           switching = false;
           markDirtyFromView();
@@ -917,6 +991,7 @@ async function bootstrap(): Promise<void> {
 
   wireButtons();
   wireAbout();
+  wireOpenMenu();
   updateSourceButton();
   updateThemeButton();
   updateDirButtons();

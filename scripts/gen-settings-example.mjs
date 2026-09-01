@@ -34,6 +34,7 @@ accent = ""                 # accent colour, e.g. "#0969da" ("" = default)
 
 # --- written and managed by Mowl — no need to touch these ---
 # open_files = []            # files to reopen on next launch (session restore)
+# open_dirs = []             # "ltr"/"rtl" per open_files entry (per-file direction)
 # active_tab = 0             # index into open_files of the active tab
 # [window]                   # width / height / x / y / maximized
 `;

@@ -1,13 +1,12 @@
 # Screenshots
 
-The main [README](../README.md) expects these image files here:
+Images used by the main [README](../README.md):
 
-| File | What to capture |
+| File | What it shows |
 |---|---|
-| `screenshot-light.png` | Mowl editing a document with headings, a list and a code block (light theme) |
-| `screenshot-dark.png` | The same or a similar document in dark mode |
+| `logo.png` | App mark (256 px), shown at the top of the README |
+| `screenshot-light.png` | Mowl editing a document, light theme |
+| `screenshot-dark.png` | The same in dark mode |
 | `screenshot-block-menu.png` | The `⠿` block menu open on a block |
-| `screenshot-rtl.png` | A document switched to right‑to‑left |
 
-PNG, roughly 1400–1800 px wide, cropped to the window. Keep file sizes modest
-(< ~400 KB each) so the README stays quick to load.
+PNG, cropped to the window, kept modest in size so the README loads quickly.

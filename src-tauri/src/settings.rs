@@ -70,6 +70,9 @@ pub struct Settings {
     // --- app-managed state ---
     /// Files to reopen on next launch (session restore).
     pub open_files: Vec<PathBuf>,
+    /// Writing direction ("ltr"|"rtl") per entry in `open_files`, so a restored
+    /// tab keeps the orientation it had. Shorter/longer than `open_files` is fine.
+    pub open_dirs: Vec<String>,
     /// Index into `open_files` of the tab that was active.
     pub active_tab: usize,
     pub window: WindowState,
@@ -91,6 +94,7 @@ impl Default for Settings {
             source_font_size: 15,
             accent: String::new(),
             open_files: Vec::new(),
+            open_dirs: Vec::new(),
             active_tab: 0,
             window: WindowState::default(),
         }

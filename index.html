@@ -15,7 +15,7 @@
         </button>
         <span id="doc-title" data-tauri-drag-region>Untitled</span>
         <div id="actions">
-          <button id="btn-open" title="Open (Ctrl/Cmd+O)" aria-label="Open">
+          <button id="btn-open" title="New / Open (Ctrl/Cmd+N, Ctrl/Cmd+O)" aria-label="New or open file" aria-haspopup="menu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </button>
           <button id="btn-save" title="Save (Ctrl/Cmd+S)" aria-label="Save">
@@ -44,6 +44,10 @@
       <main id="editor"></main>
       <textarea id="source" spellcheck="false" hidden></textarea>
       <div id="settings-hint" hidden></div>
+      <div id="open-menu" role="menu" hidden>
+        <button type="button" role="menuitem" data-act="new">New</button>
+        <button type="button" role="menuitem" data-act="open">Open…</button>
+      </div>
       <div id="about" hidden>
         <div class="about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
           <button class="about-close" aria-label="Close">&times;</button>
