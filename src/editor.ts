@@ -13,6 +13,7 @@ import {
   configureMarkdownSerializer,
   type ListMarker,
 } from "./markdown-serializer";
+import { patchImageBlockMarkdown } from "./image-block-markdown";
 import {
   findKey,
   findPlugin,
@@ -80,7 +81,10 @@ export class Editor {
     await this.destroy();
     const crepe = new Crepe({
       root: this.host,
-      defaultValue: markdown,
+      // Content is loaded via `setContent` below, once the image-block Markdown
+      // runners are patched — `defaultValue` would be parsed with Crepe's own
+      // lossy image handling (see image-block-markdown.ts).
+      defaultValue: "",
       featureConfigs: {
         [Crepe.Feature.ImageBlock]: { proxyDomURL: this.resolveImageSrc },
       },
@@ -95,7 +99,9 @@ export class Editor {
     });
     await crepe.create();
     this.crepe = crepe;
+    patchImageBlockMarkdown(crepe);
     this.disposeBlockMenu = installBlockMenu(crepe);
+    if (markdown) this.setContent(markdown);
   }
 
   /** Rebuild the instance in place, keeping the current content. */

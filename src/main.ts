@@ -361,9 +361,20 @@ async function saveDoc(): Promise<boolean> {
     await message(String(e), { title: "Mowl", kind: "error" });
     return false;
   }
-  if (written !== md) writeView(written, viewScrollTop());
-  tab.saved = written;
-  tab.content = written;
+  if (sourceMode) {
+    // The textarea shows raw Markdown, so reflect the beautified tables back.
+    if (written !== md) writeView(written, viewScrollTop());
+    tab.saved = written;
+    tab.content = written;
+  } else {
+    // Preview mode: re-loading the document into Crepe (`replaceAll`) would
+    // wipe the undo history, and the backend's table beautification is
+    // invisible in the rendered view anyway. Leave the editor untouched and
+    // take its own serialization as the new clean baseline — the file on disk
+    // holds `written`, which round-trips to the same rendered document.
+    tab.saved = md;
+    tab.content = md;
+  }
   tab.dirty = false;
   tabBar.refreshDirty();
   updateTitle();
