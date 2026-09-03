@@ -82,7 +82,18 @@ const turnInto =
     if (cmd) cmd(view.state, view.dispatch, view);
   };
 
-/** Bullet <-> numbered: retype the surrounding list, or wrap if there is none. */
+/**
+ * Bullet <-> numbered: retype the surrounding list, or wrap if there is none.
+ *
+ * The commonmark preset keeps each `list_item`'s `listType`/`label` attrs in
+ * sync with its parent list via an `appendTransaction` plugin, and treats a
+ * stale `listType: "ordered"` on a bullet list's first child as a sign that
+ * the list is *meant* to be ordered — it retypes the list right back. So a
+ * bare `setNodeMarkup` on the list here (leaving children stale) gets
+ * silently reverted on ordered -> bullet. Flip the immediate children's
+ * `listType` (and label, for bullet) in the same transaction so that
+ * invariant never breaks.
+ */
 const toList =
   (name: string): Runner =>
   (ctx, target) => {
@@ -92,7 +103,17 @@ const toList =
     const found = listAncestor(view.state);
     if (found) {
       if (found.node.type === listType) return;
-      view.dispatch(view.state.tr.setNodeMarkup(found.pos, listType, null));
+      const bullet = name === "bullet_list";
+      let tr = view.state.tr.setNodeMarkup(found.pos, listType, null);
+      found.node.forEach((child, offset) => {
+        if (child.type.name !== "list_item") return;
+        tr = tr.setNodeMarkup(found.pos + 1 + offset, undefined, {
+          ...child.attrs,
+          listType: bullet ? "bullet" : "ordered",
+          label: bullet ? "•" : child.attrs.label,
+        });
+      });
+      view.dispatch(tr);
     } else {
       wrapInList(listType)(view.state, view.dispatch, view);
     }
@@ -220,8 +241,18 @@ function resolveTarget(view: EditorView, handleRect: DOMRect): Target | null {
   try {
     const $pos = view.state.doc.resolve(probe.pos);
     if ($pos.depth >= 1) {
-      const from = $pos.before(1);
-      const node = $pos.node(1);
+      // Prefer the closest enclosing list: a handle on a nested list item
+      // should act on that sub-list (and its "active" type), not the whole
+      // top-level list it's indented under.
+      let depth = 1;
+      for (let d = $pos.depth; d > 0; d--) {
+        if (LIST_NAMES.includes($pos.node(d).type.name)) {
+          depth = d;
+          break;
+        }
+      }
+      const from = $pos.before(depth);
+      const node = $pos.node(depth);
       const to = from + node.nodeSize;
       return { textPos: Math.min(Math.max(probe.pos, from + 1), to - 1), from, to, node };
     }
