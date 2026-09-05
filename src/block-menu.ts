@@ -7,7 +7,7 @@
 import type { Crepe } from "@milkdown/crepe";
 import type { Ctx } from "@milkdown/kit/ctx";
 import { editorViewCtx } from "@milkdown/kit/core";
-import { setBlockType, wrapIn } from "@milkdown/kit/prose/commands";
+import { lift, setBlockType, wrapIn } from "@milkdown/kit/prose/commands";
 import { wrapInList, liftListItem } from "@milkdown/kit/prose/schema-list";
 import {
   NodeSelection,
@@ -15,6 +15,7 @@ import {
   type Command,
   type EditorState,
 } from "@milkdown/kit/prose/state";
+import { canJoin } from "@milkdown/kit/prose/transform";
 import type { EditorView } from "@milkdown/kit/prose/view";
 import type { Node as ProseNode, NodeType } from "@milkdown/kit/prose/model";
 
@@ -33,6 +34,14 @@ function listAncestor(state: EditorState):
   return null;
 }
 
+function hasAncestorType(state: EditorState, typeName: string): boolean {
+  const $from = state.selection.$from;
+  for (let d = $from.depth; d > 0; d--) {
+    if ($from.node(d).type.name === typeName) return true;
+  }
+  return false;
+}
+
 interface Target {
   /** A position inside the hovered block, for selection-based commands. */
   textPos: number;
@@ -40,6 +49,27 @@ interface Target {
   from: number;
   to: number;
   node: ProseNode;
+  /**
+   * All top-level blocks covered by a multi-block text selection that
+   * overlaps the hovered block, if any. "Turn into" / list actions apply to
+   * every block here instead of just the hovered one; structural actions
+   * (insert/duplicate/delete/table/…) ignore it and stick to the single
+   * hovered block.
+   */
+  blocks?: { from: number; to: number; node: ProseNode; index: number }[];
+  /**
+   * Set instead of `blocks` when the hovered target is a whole container —
+   * a flat list or a blockquote (see `resolveTarget`: hovering *any* line
+   * inside one resolves `node`/`from`/`to` to the container as a whole) —
+   * and the selection spans more than one of its children. `anchor` is the
+   * container's own start position — the one thing guaranteed to stay valid
+   * across the whole conversion, since lifting a child out only ever touches
+   * its own position and whatever comes after it. `indices` are the
+   * affected children's positions within the container, always processed
+   * tail-first so each lift only ever shrinks or splits the container
+   * *after* the anchor, never invalidating it.
+   */
+  containerItems?: { anchor: number; indices: number[] };
 }
 
 type Runner = (ctx: Ctx, target: Target) => void;
@@ -48,6 +78,13 @@ interface Item {
   run: Runner;
   /** True when `node` (the top-level block by the handle) is already this type. */
   active?: (node: ProseNode) => boolean;
+  /**
+   * False for actions that only ever make sense on the single hovered block
+   * (insert/duplicate/delete/table/image/divider) — hidden from the menu
+   * while a multi-block selection is active, since clicking them would
+   * silently act on just one of the selected blocks. Defaults to true.
+   */
+  multiBlock?: boolean;
 }
 
 const isType = (name: string) => (n: ProseNode) => n.type.name === name;
@@ -63,23 +100,129 @@ function placeCursor(view: EditorView, target: Target): void {
   );
 }
 
-/** Turn the block into a non-list block: first lift it fully out of any list. */
+/**
+ * Merge adjacent top-level siblings of the same wrapper type after a
+ * multi-block conversion, so e.g. three selected paragraphs turned into
+ * quotes become one blockquote (matching how Markdown itself has no way to
+ * represent three back-to-back blockquotes as distinct from one). Only
+ * container types are listed — merging textblocks (heading/paragraph/code)
+ * would concatenate their text, which is never what "format the selection"
+ * means.
+ *
+ * Scoped to the touched child-index range: converting a block never adds or
+ * removes top-level siblings (wrapping replaces one child with one child),
+ * so the original indices of the selected blocks still identify them after
+ * the loop. Scanning the whole document instead would risk merging
+ * unrelated, pre-existing adjacent blocks elsewhere (e.g. two intentionally
+ * separate `> quote` paragraphs) into one.
+ */
+const MERGEABLE_WRAPPERS = new Set(["bullet_list", "ordered_list", "blockquote"]);
+
+function mergeAdjacentBlocks(
+  view: EditorView,
+  name: string,
+  range: { start: number; end: number },
+): void {
+  if (!MERGEABLE_WRAPPERS.has(name)) return;
+  for (let guard = 0; guard < 64; guard++) {
+    const doc = view.state.doc;
+    let pos = 0;
+    let joinedAt = -1;
+    for (let i = 0; i < doc.childCount - 1 && i < range.end; i++) {
+      const child = doc.child(i);
+      const boundary = pos + child.nodeSize;
+      if (i >= range.start) {
+        const next = doc.maybeChild(i + 1);
+        if (child.type.name === name && next?.type.name === name && canJoin(doc, boundary)) {
+          joinedAt = boundary;
+          break;
+        }
+      }
+      pos = boundary;
+    }
+    if (joinedAt < 0) break;
+    view.dispatch(view.state.tr.join(joinedAt));
+    range.end -= 1; // two siblings became one
+  }
+}
+
+function indexRange(blocks: { index: number }[]): { start: number; end: number } {
+  const indices = blocks.map((b) => b.index);
+  return { start: Math.min(...indices), end: Math.max(...indices) };
+}
+
+/**
+ * Turn one block into a non-list block: first lift it fully out of any list
+ * or blockquote wrapper, so e.g. re-quoting an already-quoted line replaces
+ * the blockquote instead of nesting a second one inside it, and turning a
+ * quoted line into a heading drops the quote rather than leaving it wrapped.
+ */
+function applyTurnInto(
+  view: EditorView,
+  make: (view: EditorView) => Command | null,
+  target: Target,
+): void {
+  placeCursor(view, target);
+
+  const li = node(view, "list_item");
+  let guard = 0;
+  while (guard++ < 16) {
+    const before = view.state;
+    if (listAncestor(before)) {
+      liftListItem(li)(before, view.dispatch, view);
+    } else if (hasAncestorType(before, "blockquote")) {
+      lift(before, view.dispatch);
+    } else {
+      break;
+    }
+    if (view.state === before) break; // the lift was a no-op; stop
+  }
+
+  const cmd = make(view);
+  if (cmd) cmd(view.state, view.dispatch, view);
+}
+
+/**
+ * Turn a block (or, for a multi-block selection, every top-level block it
+ * covers) into a non-list block. Multi-block conversions run bottom-up: since
+ * an edit never shifts positions before it, each not-yet-processed block's
+ * original `from`/`to` stays valid right up until it's its own turn.
+ */
 const turnInto =
-  (make: (view: EditorView) => Command | null): Runner =>
+  (make: (view: EditorView) => Command | null, mergeName?: string): Runner =>
   (ctx, target) => {
     const view = ctx.get(editorViewCtx);
-    placeCursor(view, target);
 
-    const li = node(view, "list_item");
-    let guard = 0;
-    while (listAncestor(view.state) && guard++ < 8) {
-      const before = view.state;
-      liftListItem(li)(view.state, view.dispatch, view);
-      if (view.state === before) break;
+    const containerItems = target.containerItems;
+    if (containerItems && containerItems.indices.length > 1) {
+      // Unlike a plain top-level block swap, lifting a child out of a list
+      // or blockquote can restructure the *whole* container (splitting it
+      // around the lifted child), so a captured from/to can go stale after
+      // processing a sibling. Re-resolve fresh from the stable anchor
+      // instead — see the `Target.containerItems` doc for why that's safe.
+      const ordered = [...containerItems.indices].sort((a, b) => b - a);
+      for (const idx of ordered) {
+        const container = view.state.doc.resolve(containerItems.anchor + 1).parent;
+        let offset = 0;
+        for (let k = 0; k < idx; k++) offset += container.child(k).nodeSize;
+        const item = container.child(idx);
+        const from = containerItems.anchor + 1 + offset;
+        const to = from + item.nodeSize;
+        applyTurnInto(view, make, { textPos: from + 1, from, to, node: item });
+      }
+      return;
     }
 
-    const cmd = make(view);
-    if (cmd) cmd(view.state, view.dispatch, view);
+    const blocks = target.blocks;
+    if (blocks && blocks.length > 1) {
+      const ordered = [...blocks].sort((a, b) => b.from - a.from);
+      for (const b of ordered) {
+        applyTurnInto(view, make, { textPos: b.from + 1, from: b.from, to: b.to, node: b.node });
+      }
+      if (mergeName) mergeAdjacentBlocks(view, mergeName, indexRange(blocks));
+      return;
+    }
+    applyTurnInto(view, make, target);
   };
 
 /**
@@ -93,30 +236,62 @@ const turnInto =
  * silently reverted on ordered -> bullet. Flip the immediate children's
  * `listType` (and label, for bullet) in the same transaction so that
  * invariant never breaks.
+ *
+ * If the block is currently wrapped in a blockquote (not a list), that
+ * wrapper is lifted first — otherwise `wrapInList` below would nest a new
+ * list *inside* the blockquote instead of replacing it.
+ */
+function applyToList(view: EditorView, name: string, target: Target): void {
+  placeCursor(view, target);
+
+  let guard = 0;
+  while (hasAncestorType(view.state, "blockquote") && guard++ < 8) {
+    const before = view.state;
+    lift(before, view.dispatch);
+    if (view.state === before) break;
+  }
+
+  const listType = node(view, name);
+  const found = listAncestor(view.state);
+  if (found) {
+    if (found.node.type === listType) return;
+    const bullet = name === "bullet_list";
+    let tr = view.state.tr.setNodeMarkup(found.pos, listType, null);
+    found.node.forEach((child, offset) => {
+      if (child.type.name !== "list_item") return;
+      tr = tr.setNodeMarkup(found.pos + 1 + offset, undefined, {
+        ...child.attrs,
+        listType: bullet ? "bullet" : "ordered",
+        label: bullet ? "•" : child.attrs.label,
+      });
+    });
+    view.dispatch(tr);
+  } else {
+    wrapInList(listType)(view.state, view.dispatch, view);
+  }
+}
+
+/**
+ * Bullet/numbered list, extended to a multi-block selection: each covered
+ * block becomes (or joins) a list, processed bottom-up like `turnInto`, then
+ * adjacent same-type lists are merged into one so the result is a single
+ * list with one item per selected block rather than N separate one-item
+ * lists.
  */
 const toList =
   (name: string): Runner =>
   (ctx, target) => {
     const view = ctx.get(editorViewCtx);
-    placeCursor(view, target);
-    const listType = node(view, name);
-    const found = listAncestor(view.state);
-    if (found) {
-      if (found.node.type === listType) return;
-      const bullet = name === "bullet_list";
-      let tr = view.state.tr.setNodeMarkup(found.pos, listType, null);
-      found.node.forEach((child, offset) => {
-        if (child.type.name !== "list_item") return;
-        tr = tr.setNodeMarkup(found.pos + 1 + offset, undefined, {
-          ...child.attrs,
-          listType: bullet ? "bullet" : "ordered",
-          label: bullet ? "•" : child.attrs.label,
-        });
-      });
-      view.dispatch(tr);
-    } else {
-      wrapInList(listType)(view.state, view.dispatch, view);
+    const blocks = target.blocks;
+    if (blocks && blocks.length > 1) {
+      const ordered = [...blocks].sort((a, b) => b.from - a.from);
+      for (const b of ordered) {
+        applyToList(view, name, { textPos: b.from + 1, from: b.from, to: b.to, node: b.node });
+      }
+      mergeAdjacentBlocks(view, name, indexRange(blocks));
+      return;
     }
+    applyToList(view, name, target);
   };
 
 const structural =
@@ -148,10 +323,11 @@ const GROUPS: Item[][] = [
   [
     { label: "Bullet list", run: toList("bullet_list"), active: isType("bullet_list") },
     { label: "Numbered list", run: toList("ordered_list"), active: isType("ordered_list") },
-    { label: "Quote", run: turnInto((v) => wrapIn(node(v, "blockquote"))), active: isType("blockquote") },
+    { label: "Quote", run: turnInto((v) => wrapIn(node(v, "blockquote")), "blockquote"), active: isType("blockquote") },
     { label: "Code block", run: turnInto((v) => setBlockType(node(v, "code_block"))), active: isType("code_block") },
     {
       label: "Table",
+      multiBlock: false,
       run: structural((view, t) => {
         const table = buildTable(view, 3, 3);
         if (!table) return;
@@ -171,6 +347,7 @@ const GROUPS: Item[][] = [
     {
       label: "Image",
       active: isType("image-block"),
+      multiBlock: false,
       run: structural((view, t) => {
         const type = view.state.schema.nodes["image-block"];
         if (!type) return;
@@ -192,6 +369,7 @@ const GROUPS: Item[][] = [
     {
       label: "Divider",
       active: isType("hr"),
+      multiBlock: false,
       run: structural((view, t) => {
         const hr = node(view, "hr").create();
         view.dispatch(view.state.tr.insert(t.to, hr).scrollIntoView());
@@ -201,6 +379,7 @@ const GROUPS: Item[][] = [
   [
     {
       label: "Insert line above",
+      multiBlock: false,
       run: structural((view, t) => {
         let tr = view.state.tr.insert(t.from, emptyParagraph(view));
         tr = tr.setSelection(TextSelection.near(tr.doc.resolve(t.from + 1)));
@@ -209,6 +388,7 @@ const GROUPS: Item[][] = [
     },
     {
       label: "Insert line below",
+      multiBlock: false,
       run: structural((view, t) => {
         let tr = view.state.tr.insert(t.to, emptyParagraph(view));
         tr = tr.setSelection(TextSelection.near(tr.doc.resolve(t.to + 1)));
@@ -217,6 +397,7 @@ const GROUPS: Item[][] = [
     },
     {
       label: "Duplicate",
+      multiBlock: false,
       run: structural((view, t) => {
         view.dispatch(
           view.state.tr.insert(t.to, t.node.copy(t.node.content)).scrollIntoView(),
@@ -225,6 +406,7 @@ const GROUPS: Item[][] = [
     },
     {
       label: "Delete",
+      multiBlock: false,
       run: structural((view, t) => {
         view.dispatch(view.state.tr.delete(t.from, t.to).scrollIntoView());
       }),
@@ -232,7 +414,67 @@ const GROUPS: Item[][] = [
   ],
 ];
 
-function resolveTarget(view: EditorView, handleRect: DOMRect): Target | null {
+/**
+ * If the live selection is a range that overlaps `target` and spans more
+ * than one top-level block, attach those blocks so "turn into"/list actions
+ * can format the whole selection. Only meaningful when `target` itself is a
+ * top-level block (not a nested list matched by the depth-preference logic
+ * above) — nested-list bulk formatting is out of scope.
+ *
+ * `sel` is passed in rather than read from `view.state.selection` because by
+ * the time this runs, it's already too late to read it live: Milkdown's own
+ * block-handle plugin (`@milkdown/plugin-block`'s `BlockService`) collapses
+ * the selection into a `NodeSelection` on the hovered block on `mousedown`,
+ * which always fires before the `click` that opens this menu. The caller
+ * grabs the real selection earlier, on `pointerdown` capture, before that
+ * handler runs.
+ */
+// Structural leaf blocks a "turn into"/list conversion can't sensibly apply
+// to — a multi-block selection that happens to cross one of these just skips
+// it rather than letting `TextSelection.near` snap the cursor into a
+// neighbouring block and silently convert the wrong thing.
+const NON_FORMATTABLE = new Set(["hr", "image-block", "table"]);
+
+function withSelectionBlocks(
+  view: EditorView,
+  target: Target,
+  topLevel: boolean,
+  sel: { from: number; to: number } | null,
+): Target {
+  if (!topLevel || !sel) return target;
+  if (sel.from >= target.to || sel.to <= target.from) return target;
+
+  // Hovering any line inside a flat list or a blockquote resolves `target`
+  // to that whole container (see resolveTarget), so the top-level scan
+  // below would only ever see one sibling here. Look at the container's own
+  // children instead.
+  if (LIST_NAMES.includes(target.node.type.name) || target.node.type.name === "blockquote") {
+    const indices: number[] = [];
+    target.node.forEach((child, offset, index) => {
+      const from = target.from + 1 + offset;
+      const to = from + child.nodeSize;
+      if (to > sel.from && from < sel.to) indices.push(index);
+    });
+    if (indices.length > 1) target.containerItems = { anchor: target.from, indices };
+    return target;
+  }
+
+  const blocks: { from: number; to: number; node: ProseNode; index: number }[] = [];
+  view.state.doc.forEach((child, offset, index) => {
+    if (NON_FORMATTABLE.has(child.type.name)) return;
+    const from = offset;
+    const to = offset + child.nodeSize;
+    if (to > sel.from && from < sel.to) blocks.push({ from, to, node: child, index });
+  });
+  if (blocks.length > 1) target.blocks = blocks;
+  return target;
+}
+
+function resolveTarget(
+  view: EditorView,
+  handleRect: DOMRect,
+  pendingSelection: { from: number; to: number } | null,
+): Target | null {
   const probe = view.posAtCoords({
     left: handleRect.right + 24,
     top: handleRect.top + handleRect.height / 2,
@@ -254,7 +496,13 @@ function resolveTarget(view: EditorView, handleRect: DOMRect): Target | null {
       const from = $pos.before(depth);
       const node = $pos.node(depth);
       const to = from + node.nodeSize;
-      return { textPos: Math.min(Math.max(probe.pos, from + 1), to - 1), from, to, node };
+      const target: Target = {
+        textPos: Math.min(Math.max(probe.pos, from + 1), to - 1),
+        from,
+        to,
+        node,
+      };
+      return withSelectionBlocks(view, target, depth === 1, pendingSelection);
     }
     // Atom top-level blocks (images) have no text to probe "inside" of, so
     // posAtCoords only ever lands on the boundary next to them (depth 0).
@@ -263,7 +511,7 @@ function resolveTarget(view: EditorView, handleRect: DOMRect): Target | null {
     if (!node) return null;
     const from = $pos.nodeAfter ? $pos.pos : $pos.pos - node.nodeSize;
     const to = from + node.nodeSize;
-    return { textPos: from, from, to, node };
+    return withSelectionBlocks(view, { textPos: from, from, to, node }, true, pendingSelection);
   } catch {
     return null;
   }
@@ -274,6 +522,13 @@ class BlockMenu {
   #crepe: Crepe;
   #target: Target | null = null;
   #open = false;
+  #groupEls: HTMLElement[] = [];
+  /**
+   * The selection as it was right before the user pressed down on a block
+   * handle, captured on `pointerdown` capture — see `withSelectionBlocks`
+   * for why it can't just be read from `view.state.selection` later.
+   */
+  #pendingSelection: { from: number; to: number } | null = null;
 
   constructor(crepe: Crepe) {
     this.#crepe = crepe;
@@ -295,12 +550,14 @@ class BlockMenu {
       return;
     }
     const rect = handleEl.getBoundingClientRect();
+    const pendingSelection = this.#pendingSelection;
+    this.#pendingSelection = null;
     this.#crepe.editor.action((ctx) => {
-      this.#target = resolveTarget(ctx.get(editorViewCtx), rect);
+      this.#target = resolveTarget(ctx.get(editorViewCtx), rect, pendingSelection);
     });
     if (!this.#target) return;
 
-    this.#syncActive();
+    this.#syncMenu();
     this.#el.hidden = false;
     this.#open = true;
 
@@ -329,7 +586,7 @@ class BlockMenu {
   }
 
   #build(): void {
-    GROUPS.forEach((group, gi) => {
+    this.#groupEls = GROUPS.map((group, gi) => {
       const wrap = document.createElement("div");
       wrap.className = "group";
       group.forEach((item, ii) => {
@@ -341,17 +598,34 @@ class BlockMenu {
         wrap.appendChild(btn);
       });
       this.#el.appendChild(wrap);
+      return wrap;
     });
   }
 
-  /** Mark the button whose type matches the hovered block. */
-  #syncActive(): void {
+  /**
+   * Mark the button whose type matches the hovered block, and — when a
+   * multi-block selection is active — hide the items that only make sense
+   * for a single block (a whole group hides too once every item in it is
+   * hidden, so its top-border separator doesn't dangle over empty space).
+   */
+  #syncMenu(): void {
     const node = this.#target?.node;
-    this.#el.querySelectorAll<HTMLButtonElement>("button[data-g]").forEach((btn) => {
-      const item = GROUPS[Number(btn.dataset.g)]?.[Number(btn.dataset.i)];
-      const on = !!(node && item?.active?.(node));
-      btn.classList.toggle("is-active", on);
-      btn.toggleAttribute("aria-current", on);
+    const multi =
+      (this.#target?.blocks?.length ?? 0) > 1 ||
+      (this.#target?.containerItems?.indices.length ?? 0) > 1;
+    this.#groupEls.forEach((wrap, gi) => {
+      let anyVisible = false;
+      GROUPS[gi].forEach((item, ii) => {
+        const btn = wrap.children[ii] as HTMLButtonElement | undefined;
+        if (!btn) return;
+        const on = !!(node && item.active?.(node));
+        btn.classList.toggle("is-active", on);
+        btn.toggleAttribute("aria-current", on);
+        const visible = !multi || item.multiBlock !== false;
+        btn.hidden = !visible;
+        if (visible) anyVisible = true;
+      });
+      wrap.hidden = !anyVisible;
     });
   }
 
@@ -375,7 +649,21 @@ class BlockMenu {
   #onPointerDown = (e: Event): void => {
     const t = e.target as HTMLElement;
     if (this.#el.contains(t)) return;
-    if (t.closest(".milkdown-block-handle")) return; // let the click toggle
+    if (t.closest(".milkdown-block-handle")) {
+      // Milkdown's own `mousedown` handler on this same element (added by
+      // @milkdown/plugin-block's BlockService) is about to collapse the
+      // current selection into a NodeSelection on the hovered block —
+      // pointerdown always fires and fully resolves before mousedown does,
+      // so this is the last point the real (possibly multi-block) selection
+      // can still be read.
+      this.#crepe.editor.action((ctx) => {
+        const { from, to } = ctx.get(editorViewCtx).state.selection;
+        this.#pendingSelection =
+          from === to ? null : { from: Math.min(from, to), to: Math.max(from, to) };
+      });
+      return; // let the click toggle
+    }
+    this.#pendingSelection = null;
     this.hide();
   };
 

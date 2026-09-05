@@ -240,6 +240,7 @@ body {
   font: inherit;
   cursor: pointer;
 }
+.mowl-block-menu button[hidden], .mowl-block-menu .group[hidden] { display: none; }
 .mowl-block-menu button:hover { background: var(--hover); }
 .mowl-block-menu button.is-active {
   background: color-mix(in srgb, var(--accent, #4a7dff) 16%, transparent);
