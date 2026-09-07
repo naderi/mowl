@@ -59,7 +59,7 @@ through to HTML export (`<html dir="rtl">`).
 
 ### 🧱 Block menu
 
-Hover any block and click the `⠿` handle for a quick menu that acts on that block:
+Hover any block and click the `⠿` button for a quick menu that acts on that block:
 
 - **Turn into** — Text, Heading 1–3, bullet list, numbered list, quote, code
   block, or **table**
@@ -122,13 +122,21 @@ font, font size, source‑view font, and accent colour are all configurable.
 Set Mowl as the default app for `.md` / `.markdown` files (via the installer).
 Double‑click a Markdown file and it opens in a new tab of the running window.
 
-### 💾 Portable configuration
+### ⚙️ Settings, GUI or file
 
-A single, commented `settings.toml` next to the executable. Edit it in any text
-editor and Mowl **picks up the change within a second — no restart**. If the
-program folder is read‑only, Mowl falls back to the OS config directory and tells
-you so in the window. Every release also ships a fully commented
-`settings.example.toml` as a reference.
+Every setting can be changed from an in‑app screen — the settings button in the
+toolbar (or `Ctrl/Cmd+,`) flips it open over the editor, with one control per
+option and changes applied and saved as you make them. Or edit the single,
+commented `settings.toml` next to the executable in any text editor — Mowl
+**picks up the change within a second, no restart**. If the program folder is
+read‑only, Mowl falls back to the OS config directory and tells you so in the
+window. Every release also ships a fully commented `settings.example.toml`.
+
+### 🌍 English and Deutsch
+
+The interface is available in **English and German**, following the OS language
+by default (`language = "system" | "en" | "de"`, switchable in the settings
+screen).
 
 ## Screenshots
 
@@ -138,7 +146,7 @@ you so in the window. Every release also ships a fully commented
 
 | Right‑to‑left (per file)                           |                          Block menu                           |
 | -------------------------------------------------- | :-----------------------------------------------------------: |
-| ![Right‑to‑left document](docs/screenshot-rtl.png) | ![Block menu on the ⠿ handle](docs/screenshot-block-menu.png) |
+| ![Right‑to‑left document](docs/screenshot-rtl.png) | ![Block menu on the ⠿ button](docs/screenshot-block-menu.png) |
 
 ## Keyboard shortcuts
 
@@ -157,6 +165,7 @@ you so in the window. Every release also ships a fully commented
 | Paste URL onto selected text | `Ctrl/Cmd+V`       |
 | Block: Text / H1–H3 / lists / quote / code | `Ctrl/Cmd+0`–`7` |
 | Insert emoji                 | `Ctrl/Cmd+.`       |
+| Settings                     | `Ctrl/Cmd+,`       |
 
 ## Download
 
@@ -187,6 +196,7 @@ the OS config directory as a fallback. The top section is meant for hand editing
 and is reloaded live:
 
 ```toml
+language = "system"         # system (follow the OS) | en | de
 theme = "system"            # system | light | dark
 direction = "ltr"           # ltr | rtl
 spellcheck = true

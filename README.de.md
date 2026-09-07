@@ -68,10 +68,10 @@ die Richtung wird in den HTML‑Export übernommen (`<html dir="rtl">`).
 
 ### 🧱 Blockmenü
 
-Über einen Block fahren und auf den `⠿`‑Griff klicken für ein Schnellmenü, das auf
+Über einen Block fahren und auf den `⠿`‑Knopf klicken für ein Schnellmenü, das auf
 diesen Block wirkt:
 
-- **Umwandeln in** — Text, Überschrift 1–3, Aufzählung, nummerierte Liste, Zitat,
+- **Umwandeln in** — Text, Überschrift 1–3, Stichpunktliste, nummerierte Liste, Zitat,
   Codeblock oder **Tabelle**
 - **Einfügen** einer Tabelle, eines Bildes, einer Trennlinie oder einer leeren
   Zeile darüber/darunter
@@ -79,7 +79,7 @@ diesen Block wirkt:
 
 Der aktuelle Blocktyp ist hervorgehoben, damit du immer weißt, was du bearbeitest.
 Die „Umwandeln in"-Typen haben auch Tastenkürzel — `Strg/Cmd+0`–`7` (Text, Ü1, Ü2,
-Ü3, Aufzählung, nummerierte Liste, Zitat, Codeblock) — angewendet auf die Auswahl,
+Ü3, Stichpunktliste, nummerierte Liste, Zitat, Codeblock) — angewendet auf die Auswahl,
 genau wie im Menü.
 
 ### 😀 Emoji
@@ -138,14 +138,23 @@ Mowl als Standard‑App für `.md`‑/`.markdown`‑Dateien festlegen (über den
 Installer). Ein Doppelklick auf eine Markdown‑Datei öffnet sie in einem neuen Tab
 des laufenden Fensters.
 
-### 💾 Portable Konfiguration
+### ⚙️ Einstellungen, per GUI oder Datei
 
-Eine einzige, kommentierte `settings.toml` neben der Anwendung. In einem beliebigen
-Texteditor bearbeiten, und Mowl **übernimmt die Änderung innerhalb einer Sekunde —
-ohne Neustart**. Ist der Programmordner schreibgeschützt, weicht Mowl auf das
-Konfigurationsverzeichnis des Betriebssystems aus und weist im Fenster darauf hin.
-Jede Veröffentlichung bringt außerdem eine vollständig kommentierte
-`settings.example.toml` als Referenz mit.
+Jede Einstellung lässt sich in der App ändern — der Einstellungen-Knopf in der
+Toolbar (oder `Strg/Cmd+,`) klappt die Einstellungsseite über den Editor herein,
+mit einem Bedienelement pro Option; Änderungen werden sofort angewendet und
+gespeichert. Oder die einzige, kommentierte `settings.toml` neben der Anwendung
+in einem beliebigen Texteditor bearbeiten — Mowl **übernimmt die Änderung
+innerhalb einer Sekunde, ohne Neustart**. Ist der Programmordner schreibgeschützt,
+weicht Mowl auf das Konfigurationsverzeichnis des Betriebssystems aus und weist im
+Fenster darauf hin. Jede Veröffentlichung bringt außerdem eine vollständig
+kommentierte `settings.example.toml` mit.
+
+### 🌍 English und Deutsch
+
+Die Oberfläche gibt es auf **Englisch und Deutsch** und folgt standardmäßig der
+Systemsprache (`language = "system" | "en" | "de"`, umschaltbar in den
+Einstellungen).
 
 ## Screenshots
 
@@ -155,7 +164,7 @@ Jede Veröffentlichung bringt außerdem eine vollständig kommentierte
 
 | Rechts‑nach‑links (pro Datei)                              |                        Blockmenü                        |
 | ---------------------------------------------------------- | :-----------------------------------------------------: |
-| ![Dokument von rechts nach links](docs/screenshot-rtl.png) | ![Blockmenü am ⠿-Griff](docs/screenshot-block-menu.png) |
+| ![Dokument von rechts nach links](docs/screenshot-rtl.png) | ![Blockmenü am ⠿-Knopf](docs/screenshot-block-menu.png) |
 
 ## Tastenkürzel
 
@@ -174,6 +183,7 @@ Jede Veröffentlichung bringt außerdem eine vollständig kommentierte
 | URL auf markierten Text einfügen | `Strg/Cmd+V`       |
 | Block: Text / Ü1–Ü3 / Listen / Zitat / Code | `Strg/Cmd+0`–`7` |
 | Emoji einfügen                   | `Strg/Cmd+.`       |
+| Einstellungen                    | `Strg/Cmd+,`       |
 
 ## Download
 
@@ -206,6 +216,7 @@ Abschnitt ist für die Bearbeitung von Hand gedacht und wird live neu geladen
 (die `#`‑Kommentare bleiben auf Englisch, wie in der Datei):
 
 ```toml
+language = "system"         # system (follow the OS) | en | de
 theme = "system"            # system | light | dark
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true

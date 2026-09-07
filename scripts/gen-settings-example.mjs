@@ -17,7 +17,10 @@ const CONTENT = `# Mowl — example configuration
 # default shown here.
 
 # --- appearance & behaviour (safe to hand-edit) ---
+# All of these can also be changed from the in-app settings screen (the settings
+# button in the toolbar, or Ctrl/Cmd+,).
 
+language = "system"         # "system" (follow the OS) | "en" | "de"
 theme = "system"            # "system" | "light" | "dark"
 direction = "ltr"           # "ltr" | "rtl" — default for new tabs (each file keeps its own direction)
 spellcheck = true           # spell-check squiggles in the WYSIWYG editor

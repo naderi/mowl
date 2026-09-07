@@ -8,8 +8,14 @@ import { editorViewCtx } from "@milkdown/kit/core";
 import type { EditorView } from "@milkdown/kit/prose/view";
 
 import { linkFromClipboard } from "./link-clipboard";
-import { installBlockMenu, runBlockAction, type BlockActionId } from "./block-menu";
+import {
+  installBlockMenu,
+  runBlockAction,
+  type BlockActionId,
+  type BlockMenuHandle,
+} from "./block-menu";
 import { emojiInputRule } from "./emoji";
+import { t } from "./i18n";
 import {
   configureMarkdownSerializer,
   type ListMarker,
@@ -26,7 +32,7 @@ import {
 
 export class Editor {
   private crepe: Crepe | null = null;
-  private disposeBlockMenu: (() => void) | null = null;
+  private blockMenu: BlockMenuHandle | null = null;
   private readonly host: HTMLElement;
   private listMarker: ListMarker = "*";
   /** Path of the document in the active tab — the base for relative images. */
@@ -88,6 +94,7 @@ export class Editor {
       defaultValue: "",
       featureConfigs: {
         [Crepe.Feature.ImageBlock]: { proxyDomURL: this.resolveImageSrc },
+        [Crepe.Feature.Placeholder]: { text: t("editor.placeholder") },
       },
     });
     const marker = this.listMarker;
@@ -102,7 +109,7 @@ export class Editor {
     await crepe.create();
     this.crepe = crepe;
     patchImageBlockMarkdown(crepe);
-    this.disposeBlockMenu = installBlockMenu(crepe);
+    this.blockMenu = installBlockMenu(crepe);
     if (markdown) this.setContent(markdown);
   }
 
@@ -143,6 +150,12 @@ export class Editor {
    *  conversion as the matching ⠿ menu entry (see block-menu.ts). */
   runBlockAction(id: BlockActionId): void {
     if (this.crepe) runBlockAction(this.crepe, id);
+  }
+
+  /** Re-label UI after a language change (block menu; placeholder waits for a
+   *  reload — it is only visible on an empty document). */
+  retranslate(): void {
+    this.blockMenu?.retranslate();
   }
 
   /** Insert plain text at the cursor (used for emoji). */
@@ -252,8 +265,8 @@ export class Editor {
   }
 
   async destroy(): Promise<void> {
-    this.disposeBlockMenu?.();
-    this.disposeBlockMenu = null;
+    this.blockMenu?.dispose();
+    this.blockMenu = null;
     if (this.crepe) {
       await this.crepe.destroy();
       this.crepe = null;

@@ -2,6 +2,8 @@
 // host (main.ts) hands it a `FindTarget` for whichever view is active (the
 // WYSIWYG editor or the raw source textarea).
 
+import { t } from "./i18n";
+
 export interface FindStatus {
   count: number;
   /** 1-based active match, 0 when none. */
@@ -25,10 +27,10 @@ const ICON_CLOSE =
 
 export class FindBar {
   #el: HTMLElement;
-  #findInput: HTMLInputElement;
-  #replaceInput: HTMLInputElement;
-  #caseBtn: HTMLButtonElement;
-  #countEl: HTMLElement;
+  #findInput!: HTMLInputElement;
+  #replaceInput!: HTMLInputElement;
+  #caseBtn!: HTMLButtonElement;
+  #countEl!: HTMLElement;
   #target: (() => FindTarget) | null = null;
   #open = false;
 
@@ -36,35 +38,57 @@ export class FindBar {
     this.#el = document.createElement("div");
     this.#el.id = "find-bar";
     this.#el.hidden = true;
-    this.#el.innerHTML = `
-      <div class="find-row">
-        <input type="text" class="find-field" placeholder="Find" aria-label="Find" spellcheck="false" />
-        <span class="find-count" aria-live="polite"></span>
-        <button class="find-btn" data-act="prev" title="Previous match (Shift+Enter)" aria-label="Previous match">&#8593;</button>
-        <button class="find-btn" data-act="next" title="Next match (Enter)" aria-label="Next match">&#8595;</button>
-        <button class="find-btn find-toggle" data-act="case" title="Match case" aria-label="Match case">Aa</button>
-        <button class="find-btn" data-act="close" title="Close (Esc)" aria-label="Close">${ICON_CLOSE}</button>
-      </div>
-      <div class="find-row">
-        <input type="text" class="find-field" data-role="replace" placeholder="Replace" aria-label="Replace with" spellcheck="false" />
-        <button class="find-btn find-text" data-act="replace">Replace</button>
-        <button class="find-btn find-text" data-act="replaceAll">All</button>
-      </div>`;
+    this.#mount();
     anchor.insertAdjacentElement("beforebegin", this.#el);
 
+    // Listeners live on the stable container so `#mount()` (language change)
+    // can freely rebuild the inner markup.
+    this.#el.addEventListener("click", this.#onClick);
+    this.#el.addEventListener("input", (e) => {
+      if (e.target === this.#findInput) this.#runQuery(0);
+    });
+    this.#el.addEventListener("keydown", this.#onFieldKey);
+  }
+
+  #template(): string {
+    return `
+      <div class="find-row">
+        <input type="text" class="find-field" placeholder="${t("find.find")}" aria-label="${t("find.find")}" spellcheck="false" />
+        <span class="find-count" aria-live="polite"></span>
+        <button class="find-btn" data-act="prev" title="${t("find.prev.title")}" aria-label="${t("find.prev")}">&#8593;</button>
+        <button class="find-btn" data-act="next" title="${t("find.next.title")}" aria-label="${t("find.next")}">&#8595;</button>
+        <button class="find-btn find-toggle" data-act="case" title="${t("find.matchCase")}" aria-label="${t("find.matchCase")}">Aa</button>
+        <button class="find-btn" data-act="close" title="${t("find.close")}" aria-label="${t("about.close")}">${ICON_CLOSE}</button>
+      </div>
+      <div class="find-row">
+        <input type="text" class="find-field" data-role="replace" placeholder="${t("find.replace")}" aria-label="${t("find.replaceWith")}" spellcheck="false" />
+        <button class="find-btn find-text" data-act="replace">${t("find.replaceBtn")}</button>
+        <button class="find-btn find-text" data-act="replaceAll">${t("find.all")}</button>
+      </div>`;
+  }
+
+  #mount(): void {
+    const prevFind = this.#findInput?.value ?? "";
+    const prevReplace = this.#replaceInput?.value ?? "";
+    const wasActive = this.#caseBtn?.classList.contains("active") ?? false;
+
+    this.#el.innerHTML = this.#template();
     this.#findInput = this.#el.querySelector<HTMLInputElement>(".find-field")!;
     this.#replaceInput = this.#el.querySelector<HTMLInputElement>(
       '[data-role="replace"]',
     )!;
-    this.#caseBtn = this.#el.querySelector<HTMLButtonElement>(
-      '[data-act="case"]',
-    )!;
+    this.#caseBtn = this.#el.querySelector<HTMLButtonElement>('[data-act="case"]')!;
     this.#countEl = this.#el.querySelector<HTMLElement>(".find-count")!;
 
-    this.#el.addEventListener("click", this.#onClick);
-    this.#findInput.addEventListener("input", () => this.#runQuery(0));
-    this.#findInput.addEventListener("keydown", this.#onFieldKey);
-    this.#replaceInput.addEventListener("keydown", this.#onFieldKey);
+    this.#findInput.value = prevFind;
+    this.#replaceInput.value = prevReplace;
+    this.#caseBtn.classList.toggle("active", wasActive);
+  }
+
+  /** Rebuild the markup after a language change. */
+  retranslate(): void {
+    this.#mount();
+    if (this.#open) this.#runQuery(0);
   }
 
   get isOpen(): boolean {
@@ -158,9 +182,11 @@ export class FindBar {
       return;
     }
     if (e.key === "Enter") {
+      const target = e.target as HTMLElement;
+      if (target !== this.#findInput && target !== this.#replaceInput) return;
       e.preventDefault();
       if (!this.#target) return;
-      if ((e.target as HTMLElement).dataset.role === "replace") {
+      if (target.dataset.role === "replace") {
         this.#render(this.#target().replace(this.#replaceInput.value));
       } else {
         this.#render(this.#target().step(e.shiftKey ? -1 : 1));

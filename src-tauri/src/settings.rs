@@ -44,6 +44,8 @@ impl Default for WindowState {
 #[serde(default)]
 pub struct Settings {
     // --- hand-editable preferences ---
+    /// UI language: "system" (OS locale) | "en" | "de"
+    pub language: String,
     /// "system" | "light" | "dark"
     pub theme: String,
     /// "ltr" | "rtl" — base writing direction of the editor.
@@ -83,6 +85,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            language: "system".to_string(),
             theme: "system".to_string(),
             direction: "ltr".to_string(),
             spellcheck: true,

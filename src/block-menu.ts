@@ -19,6 +19,8 @@ import { canJoin } from "@milkdown/kit/prose/transform";
 import type { EditorView } from "@milkdown/kit/prose/view";
 import type { Node as ProseNode, NodeType } from "@milkdown/kit/prose/model";
 
+import { t, type I18nKey } from "./i18n";
+
 const LIST_NAMES = ["bullet_list", "ordered_list"];
 
 function listAncestor(state: EditorState):
@@ -86,7 +88,7 @@ export type BlockActionId =
   | "code";
 
 interface Item {
-  label: string;
+  labelKey: I18nKey;
   run: Runner;
   /** Stable key for the keyboard-shortcut layer; menu-only items omit it. */
   id?: BlockActionId;
@@ -99,6 +101,17 @@ interface Item {
    * silently act on just one of the selected blocks. Defaults to true.
    */
   multiBlock?: boolean;
+}
+
+/** Ctrl/Cmd+0..7 → block id (mirrors `main.ts` `wireShortcuts()`). Shown
+ *  right-aligned in the menu so the shortcut is discoverable. */
+const SHORTCUT_DIGIT: Record<BlockActionId, number> = {
+  text: 0, h1: 1, h2: 2, h3: 3, bullet: 4, ordered: 5, quote: 6, code: 7,
+};
+const IS_MAC = /Mac|iPhone|iPad/i.test(navigator.platform);
+function shortcutHint(id: BlockActionId): string {
+  const d = SHORTCUT_DIGIT[id];
+  return IS_MAC ? `⌘${d}` : `Ctrl+${d}`;
 }
 
 const isType = (name: string) => (n: ProseNode) => n.type.name === name;
@@ -254,6 +267,11 @@ const turnInto =
  * If the block is currently wrapped in a blockquote (not a list), that
  * wrapper is lifted first — otherwise `wrapInList` below would nest a new
  * list *inside* the blockquote instead of replacing it.
+ *
+ * A `list_item`'s content starts with a `paragraph`, so `wrapInList` on a
+ * heading or code block silently fails (`findWrapping` returns null). Flatten
+ * any non-paragraph textblock to a paragraph first — "turn this heading into a
+ * bullet list" means the heading's text becomes a list item.
  */
 function applyToList(view: EditorView, name: string, target: Target): void {
   placeCursor(view, target);
@@ -281,6 +299,10 @@ function applyToList(view: EditorView, name: string, target: Target): void {
     });
     view.dispatch(tr);
   } else {
+    const para = node(view, "paragraph");
+    if (view.state.selection.$from.parent.type !== para) {
+      setBlockType(para)(view.state, view.dispatch, view);
+    }
     wrapInList(listType)(view.state, view.dispatch, view);
   }
 }
@@ -329,18 +351,18 @@ function buildTable(view: EditorView, rows = 3, cols = 3): ProseNode | null {
 
 const GROUPS: Item[][] = [
   [
-    { label: "Text", id: "text", run: turnInto((v) => setBlockType(node(v, "paragraph"))), active: isType("paragraph") },
-    { label: "Heading 1", id: "h1", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 1 })), active: isHeading(1) },
-    { label: "Heading 2", id: "h2", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 2 })), active: isHeading(2) },
-    { label: "Heading 3", id: "h3", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 3 })), active: isHeading(3) },
+    { labelKey: "block.text", id: "text", run: turnInto((v) => setBlockType(node(v, "paragraph"))), active: isType("paragraph") },
+    { labelKey: "block.h1", id: "h1", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 1 })), active: isHeading(1) },
+    { labelKey: "block.h2", id: "h2", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 2 })), active: isHeading(2) },
+    { labelKey: "block.h3", id: "h3", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 3 })), active: isHeading(3) },
   ],
   [
-    { label: "Bullet list", id: "bullet", run: toList("bullet_list"), active: isType("bullet_list") },
-    { label: "Numbered list", id: "ordered", run: toList("ordered_list"), active: isType("ordered_list") },
-    { label: "Quote", id: "quote", run: turnInto((v) => wrapIn(node(v, "blockquote")), "blockquote"), active: isType("blockquote") },
-    { label: "Code block", id: "code", run: turnInto((v) => setBlockType(node(v, "code_block"))), active: isType("code_block") },
+    { labelKey: "block.bulletList", id: "bullet", run: toList("bullet_list"), active: isType("bullet_list") },
+    { labelKey: "block.numberedList", id: "ordered", run: toList("ordered_list"), active: isType("ordered_list") },
+    { labelKey: "block.quote", id: "quote", run: turnInto((v) => wrapIn(node(v, "blockquote")), "blockquote"), active: isType("blockquote") },
+    { labelKey: "block.codeBlock", id: "code", run: turnInto((v) => setBlockType(node(v, "code_block"))), active: isType("code_block") },
     {
-      label: "Table",
+      labelKey: "block.table",
       multiBlock: false,
       run: structural((view, t) => {
         const table = buildTable(view, 3, 3);
@@ -359,7 +381,7 @@ const GROUPS: Item[][] = [
       }),
     },
     {
-      label: "Image",
+      labelKey: "block.image",
       active: isType("image-block"),
       multiBlock: false,
       run: structural((view, t) => {
@@ -381,7 +403,7 @@ const GROUPS: Item[][] = [
       }),
     },
     {
-      label: "Divider",
+      labelKey: "block.divider",
       active: isType("hr"),
       multiBlock: false,
       run: structural((view, t) => {
@@ -392,7 +414,7 @@ const GROUPS: Item[][] = [
   ],
   [
     {
-      label: "Insert line above",
+      labelKey: "block.insertAbove",
       multiBlock: false,
       run: structural((view, t) => {
         let tr = view.state.tr.insert(t.from, emptyParagraph(view));
@@ -401,7 +423,7 @@ const GROUPS: Item[][] = [
       }),
     },
     {
-      label: "Insert line below",
+      labelKey: "block.insertBelow",
       multiBlock: false,
       run: structural((view, t) => {
         let tr = view.state.tr.insert(t.to, emptyParagraph(view));
@@ -410,7 +432,7 @@ const GROUPS: Item[][] = [
       }),
     },
     {
-      label: "Duplicate",
+      labelKey: "block.duplicate",
       multiBlock: false,
       run: structural((view, t) => {
         view.dispatch(
@@ -419,7 +441,7 @@ const GROUPS: Item[][] = [
       }),
     },
     {
-      label: "Delete",
+      labelKey: "block.delete",
       multiBlock: false,
       run: structural((view, t) => {
         view.dispatch(view.state.tr.delete(t.from, t.to).scrollIntoView());
@@ -676,13 +698,34 @@ class BlockMenu {
       group.forEach((item, ii) => {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.textContent = item.label;
         btn.dataset.g = String(gi);
         btn.dataset.i = String(ii);
+
+        const label = document.createElement("span");
+        label.className = "label";
+        label.textContent = t(item.labelKey);
+        btn.appendChild(label);
+
+        if (item.id) {
+          const sc = document.createElement("span");
+          sc.className = "shortcut";
+          sc.textContent = shortcutHint(item.id);
+          btn.appendChild(sc);
+        }
         wrap.appendChild(btn);
       });
       this.#el.appendChild(wrap);
       return wrap;
+    });
+  }
+
+  /** Refresh the button labels after a language change. */
+  retranslate(): void {
+    this.#groupEls.forEach((wrap, gi) => {
+      GROUPS[gi].forEach((item, ii) => {
+        const label = wrap.children[ii]?.querySelector(".label");
+        if (label) label.textContent = t(item.labelKey);
+      });
     });
   }
 
@@ -760,7 +803,13 @@ class BlockMenu {
   };
 }
 
-export function installBlockMenu(crepe: Crepe): () => void {
+export interface BlockMenuHandle {
+  dispose: () => void;
+  /** Re-label the menu buttons after a language change. */
+  retranslate: () => void;
+}
+
+export function installBlockMenu(crepe: Crepe): BlockMenuHandle {
   const menu = new BlockMenu(crepe);
   const onClick = (e: MouseEvent) => {
     const handle = (e.target as HTMLElement).closest<HTMLElement>(
@@ -772,8 +821,11 @@ export function installBlockMenu(crepe: Crepe): () => void {
     menu.toggle(handle);
   };
   document.addEventListener("click", onClick, true);
-  return () => {
-    document.removeEventListener("click", onClick, true);
-    menu.destroy();
+  return {
+    dispose: () => {
+      document.removeEventListener("click", onClick, true);
+      menu.destroy();
+    },
+    retranslate: () => menu.retranslate(),
   };
 }

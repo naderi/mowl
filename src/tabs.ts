@@ -2,6 +2,8 @@
 // instance is shared (main.ts swaps content on activation). Inactive tabs cost
 // only their text.
 
+import { t } from "./i18n";
+
 export interface Tab {
   id: string;
   path: string | null;
@@ -19,9 +21,9 @@ let seq = 0;
 const nextId = () => `t${++seq}`;
 
 export function baseName(path: string | null): string {
-  if (!path) return "Untitled";
+  if (!path) return t("doc.untitled");
   const parts = path.replace(/[\\/]+$/, "").split(/[\\/]/);
-  return parts[parts.length - 1] || "Untitled";
+  return parts[parts.length - 1] || t("doc.untitled");
 }
 
 export class TabBar {
@@ -133,7 +135,7 @@ export class TabBar {
       item.className = "tab" + (tab.id === this.activeId ? " active" : "");
       item.classList.toggle("dirty", tab.dirty);
       item.dataset.tab = tab.id;
-      item.title = tab.path ?? "Untitled";
+      item.title = tab.path ?? t("doc.untitled");
 
       const name = document.createElement("span");
       name.className = "tab-name";
@@ -142,7 +144,7 @@ export class TabBar {
       const close = document.createElement("button");
       close.className = "tab-close";
       close.dataset.close = tab.id;
-      close.setAttribute("aria-label", "Close tab");
+      close.setAttribute("aria-label", t("tab.close"));
       close.textContent = "×";
 
       item.append(name, close);
@@ -151,7 +153,7 @@ export class TabBar {
 
     const add = document.createElement("button");
     add.id = "tab-add";
-    add.setAttribute("aria-label", "New tab");
+    add.setAttribute("aria-label", t("tab.new"));
     add.textContent = "+";
     this.el.appendChild(add);
   }

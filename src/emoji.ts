@@ -7,6 +7,7 @@ import { $prose } from "@milkdown/kit/utils";
 import { InputRule, inputRules } from "@milkdown/kit/prose/inputrules";
 
 import { EMOJI, BY_SHORTCODE, type EmojiEntry } from "./emoji-data";
+import { t } from "./i18n";
 
 // --- `:shortcode:` input rule -------------------------------------------------
 
@@ -81,12 +82,13 @@ export class EmojiPicker {
     this.#el.id = "emoji-picker";
     this.#el.hidden = true;
     this.#el.innerHTML = `
-      <input type="text" class="emoji-search" placeholder="Search emoji…" aria-label="Search emoji" spellcheck="false" autocomplete="off" />
+      <input type="text" class="emoji-search" spellcheck="false" autocomplete="off" />
       <div class="emoji-grid" role="listbox"></div>`;
     document.body.appendChild(this.#el);
 
     this.#input = this.#el.querySelector<HTMLInputElement>(".emoji-search")!;
     this.#grid = this.#el.querySelector<HTMLElement>(".emoji-grid")!;
+    this.retranslate();
 
     this.#input.addEventListener("input", () => this.#render(search(this.#input.value)));
     this.#input.addEventListener("keydown", this.#onKey);
@@ -96,6 +98,13 @@ export class EmojiPicker {
 
   get isOpen(): boolean {
     return this.#open;
+  }
+
+  /** Refresh visible text after a language change. */
+  retranslate(): void {
+    this.#input.placeholder = t("emoji.search");
+    this.#input.setAttribute("aria-label", t("emoji.search"));
+    if (this.#open) this.#render(search(this.#input.value));
   }
 
   open(anchor: DOMRect | null): void {
@@ -149,7 +158,7 @@ export class EmojiPicker {
     if (!results.length) {
       const empty = document.createElement("div");
       empty.className = "emoji-empty";
-      empty.textContent = "No matches";
+      empty.textContent = t("emoji.noMatches");
       this.#grid.appendChild(empty);
     }
   }

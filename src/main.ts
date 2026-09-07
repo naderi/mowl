@@ -9,8 +9,16 @@ import { TabBar, baseName, type Tab } from "./tabs";
 import { applyTheme, nextTheme, onSystemThemeChange, type ThemePref } from "./theme";
 import { FindBar, type FindStatus, type FindTarget } from "./find-bar";
 import { EmojiPicker } from "./emoji";
+import { SettingsPanel, type SettingKey } from "./settings-panel";
 import { isListMarker, type ListMarker } from "./markdown-serializer";
 import type { BlockActionId } from "./block-menu";
+import {
+  t,
+  setLang,
+  onLangChange,
+  applyStaticI18n,
+  type LangPref,
+} from "./i18n";
 
 interface WindowState {
   width: number;
@@ -21,6 +29,8 @@ interface WindowState {
 }
 
 interface Settings {
+  /** UI language: "system" (OS locale) | "en" | "de". */
+  language: LangPref;
   theme: ThemePref;
   /** Default writing direction for new tabs; per-file direction lives on each tab. */
   direction: "ltr" | "rtl";
@@ -62,6 +72,7 @@ const editor = new Editor(editorHost);
 const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
 const findBar = new FindBar(editorHost);
 const emojiPicker = new EmojiPicker();
+const settingsPanel = new SettingsPanel(() => settings);
 
 let settings: Settings;
 let switching = false;
@@ -136,6 +147,25 @@ function applyDirection(dir: "ltr" | "rtl"): void {
   document.getElementById("btn-ltr")?.classList.toggle("active", dir === "ltr");
   document.getElementById("btn-rtl")?.classList.toggle("active", dir === "rtl");
 }
+
+/** Switch the UI language and refresh every visible string. */
+function applyLanguage(pref: LangPref): void {
+  setLang(pref); // fires the onLangChange handler below (no-op if unchanged)
+}
+
+// One place to re-render every translatable surface after a language change.
+onLangChange(() => {
+  applyStaticI18n();
+  editor.retranslate();
+  findBar.retranslate();
+  emojiPicker.retranslate();
+  settingsPanel.retranslate();
+  tabBar.render();
+  updateSourceButton();
+  updateThemeButton();
+  updateDirButtons();
+  updateTitle();
+});
 
 /** RTL/LTR make no sense for raw Markdown — disable them in source view. */
 function updateDirButtons(): void {
@@ -247,7 +277,7 @@ tabBar.onActivate = (next: Tab, prev: Tab | null) => {
 tabBar.onCloseRequest = async (tab: Tab) => {
   if (tab.dirty) {
     const discard = await ask(
-      `Discard unsaved changes to ${baseName(tab.path)}?`,
+      t("dialog.discardChanges", { name: baseName(tab.path) }),
       { title: "Mowl", kind: "warning" },
     );
     if (!discard) return;
@@ -270,6 +300,53 @@ emojiPicker.onPick = (glyph) => {
   }
 };
 emojiPicker.onClose = () => (sourceMode ? sourceEl : editor).focus();
+
+// The settings GUI reports each change here; we own the object + the save.
+settingsPanel.onChange = (key: SettingKey, value) => {
+  (settings as unknown as Record<string, unknown>)[key] = value;
+  switch (key) {
+    case "language":
+      applyLanguage(value as LangPref);
+      break;
+    case "theme":
+      applyTheme(settings.theme);
+      updateThemeButton();
+      break;
+    case "spellcheck":
+      editor.setSpellcheck(settings.spellcheck);
+      break;
+    case "show_path":
+      updateTitle();
+      break;
+    case "always_show_tabbar":
+      tabBar.setAlwaysShow(settings.always_show_tabbar);
+      break;
+    case "list_marker":
+      if (isListMarker(settings.list_marker)) {
+        editor.setListMarker(settings.list_marker);
+        if (!sourceMode) {
+          switching = true;
+          void editor.reload().then(() => {
+            applyDirection(tabBar.active?.direction ?? "ltr");
+            editor.setSpellcheck(settings.spellcheck);
+            switching = false;
+            markDirtyFromView();
+          });
+        }
+      }
+      break;
+    case "editor_font":
+    case "editor_font_size":
+    case "source_font":
+    case "source_font_size":
+    case "accent":
+      applyAppearance();
+      break;
+    // direction / quit_on_escape / open_last_session: no immediate effect
+  }
+  persistSoon();
+};
+settingsPanel.onClose = () => (sourceMode ? sourceEl : editor).focus();
 
 sourceEl.addEventListener("input", () => {
   if (sourceMode) markDirtyFromView();
@@ -440,7 +517,7 @@ async function exportHtml(): Promise<void> {
       docPath: tab?.path ?? null,
     });
     await invoke("write_document", { path: dest, contents: html });
-    await message("HTML exported.", { title: "Mowl" });
+    await message(t("dialog.htmlExported"), { title: "Mowl" });
   } catch (e) {
     await message(String(e), { title: "Mowl", kind: "error" });
   }
@@ -470,8 +547,8 @@ async function exportPdf(): Promise<void> {
 }
 
 async function chooseExport(): Promise<void> {
-  const asHtml = await ask("Export as HTML file?  (No = print / save as PDF)", {
-    title: "Export",
+  const asHtml = await ask(t("dialog.chooseExport"), {
+    title: t("dialog.exportTitle"),
   });
   if (asHtml) await exportHtml();
   else await exportPdf();
@@ -490,7 +567,7 @@ function updateSourceButton(): void {
   btn.innerHTML = sourceMode ? ICON_TO_WYSIWYG : ICON_TO_SOURCE;
   btn.setAttribute(
     "title",
-    sourceMode ? "Back to formatted view" : "Edit Markdown source",
+    sourceMode ? t("toolbar.sourceBack.title") : t("toolbar.source.title"),
   );
 }
 
@@ -506,10 +583,10 @@ const THEME_ICON: Record<ThemePref, string> = {
   // moon
   dark: `${SVG_OPEN}<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>`,
 };
-const THEME_LABEL: Record<ThemePref, string> = {
-  system: "Theme: system — click for light",
-  light: "Theme: light — click for dark",
-  dark: "Theme: dark — click for system",
+const THEME_LABEL_KEY: Record<ThemePref, "theme.label.system" | "theme.label.light" | "theme.label.dark"> = {
+  system: "theme.label.system",
+  light: "theme.label.light",
+  dark: "theme.label.dark",
 };
 
 function updateThemeButton(): void {
@@ -517,7 +594,7 @@ function updateThemeButton(): void {
   if (!btn) return;
   const pref = settings?.theme ?? "system";
   btn.innerHTML = THEME_ICON[pref];
-  btn.setAttribute("title", THEME_LABEL[pref]);
+  btn.setAttribute("title", t(THEME_LABEL_KEY[pref]));
 }
 
 function toggleSource(): void {
@@ -730,6 +807,11 @@ function wireShortcuts(): void {
         e.key === "Escape" &&
         !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
       ) {
+        if (settingsPanel.isOpen) {
+          e.preventDefault();
+          settingsPanel.close();
+          return;
+        }
         if (emojiPicker.isOpen) {
           e.preventDefault();
           emojiPicker.close();
@@ -790,6 +872,10 @@ function wireShortcuts(): void {
       } else if (k === "." && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         emojiPicker.open(sourceMode ? null : editor.caretRect());
+      } else if (k === "," && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        if (settingsPanel.isOpen) settingsPanel.close();
+        else settingsPanel.open();
       } else if (
         !e.shiftKey && !e.altKey &&
         e.key >= "0" && e.key <= "7" && e.key.length === 1
@@ -818,7 +904,12 @@ function wireButtons(): void {
     settings.theme = nextTheme(settings.theme);
     applyTheme(settings.theme);
     updateThemeButton();
+    settingsPanel.refresh();
     persistSoon();
+  });
+  document.getElementById("btn-settings")?.addEventListener("click", () => {
+    if (settingsPanel.isOpen) settingsPanel.close();
+    else settingsPanel.open();
   });
 }
 
@@ -867,8 +958,8 @@ let closing = false;
 async function quitApp(): Promise<void> {
   if (closing) return;
   closing = true;
-  if (tabBar.tabs.some((t) => t.dirty)) {
-    const quit = await ask("You have unsaved changes. Quit without saving?", {
+  if (tabBar.tabs.some((tab) => tab.dirty)) {
+    const quit = await ask(t("dialog.unsavedQuit"), {
       title: "Mowl",
       kind: "warning",
     });
@@ -957,6 +1048,9 @@ async function bootstrap(): Promise<void> {
   settings = payload.settings;
   if (!isListMarker(settings.list_marker)) settings.list_marker = "*";
 
+  setLang(settings.language ?? "system");
+  applyStaticI18n();
+  settingsPanel.setPath(payload.location);
   applyAppearance();
   applyTheme(settings.theme);
   editor.setListMarker(settings.list_marker);
@@ -966,6 +1060,7 @@ async function bootstrap(): Promise<void> {
   // React to hand edits of settings.toml (the file watcher emits this).
   void listen<Settings>("settings-changed", (e) => {
     const ext = e.payload;
+    settings.language = ext.language ?? "system";
     settings.theme = ext.theme;
     settings.direction = ext.direction;
     settings.spellcheck = ext.spellcheck;
@@ -979,6 +1074,7 @@ async function bootstrap(): Promise<void> {
     settings.source_font = ext.source_font;
     settings.source_font_size = ext.source_font_size;
     settings.accent = ext.accent;
+    applyLanguage(settings.language); // no-op if unchanged
     applyAppearance();
     applyTheme(settings.theme);
     updateThemeButton();
@@ -987,6 +1083,7 @@ async function bootstrap(): Promise<void> {
     if (!sourceMode) applyDirection(tabBar.active?.direction ?? "ltr");
     editor.setSpellcheck(settings.spellcheck);
     updateTitle();
+    settingsPanel.refresh();
 
     if (isListMarker(ext.list_marker) && ext.list_marker !== settings.list_marker) {
       settings.list_marker = ext.list_marker;
@@ -1010,7 +1107,7 @@ async function bootstrap(): Promise<void> {
 
   if (!payload.portable) {
     const hint = document.getElementById("settings-hint") as HTMLElement;
-    hint.textContent = `Program folder is read-only — settings saved to ${payload.location}`;
+    hint.textContent = t("dialog.readonlyHint", { path: payload.location });
     hint.hidden = false;
   }
 
@@ -1054,5 +1151,8 @@ bootstrap().catch(async (e) => {
   } catch {
     /* ignore */
   }
-  await message(`Startup failed: ${String(e)}`, { title: "Mowl", kind: "error" });
+  await message(t("dialog.startupFailed", { err: String(e) }), {
+    title: "Mowl",
+    kind: "error",
+  });
 });
