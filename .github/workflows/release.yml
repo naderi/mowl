@@ -1,9 +1,18 @@
 name: release
 
-# Manual trigger only (Actions tab). Auto-on-tag is intentionally disabled for
-# now — the macOS matrix job still needs work, and releases are cut by hand.
+# Manual trigger only (Actions tab / `gh workflow run`). Auto-on-tag is
+# intentionally disabled — releases are cut by hand.
+#
+# Run it on a tag ref (`--ref v1.5.0`) to build that tag, or on any branch with
+# `-f tag=v1.5.0` to build the branch head into the v1.5.0 release (useful when a
+# workflow fix landed after the tag). The `tag` input wins when both are given.
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish into (default: the ref this runs on, if it is a tag)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -21,7 +30,7 @@ jobs:
             rust-target: aarch64-pc-windows-msvc
             args: "--target aarch64-pc-windows-msvc"
           - os: macos-14
-            rust-target: universal-apple-darwin
+            rust-target: aarch64-apple-darwin,x86_64-apple-darwin
             args: "--target universal-apple-darwin"
           - os: ubuntu-22.04
             rust-target: x86_64-unknown-linux-gnu
@@ -31,7 +40,20 @@ jobs:
             args: ""
 
     runs-on: ${{ matrix.os }}
+    # macOS bundling still needs work — let it fail without blocking the release
+    # or the checksums job.
+    continue-on-error: ${{ startsWith(matrix.os, 'macos') }}
+    env:
+      RELEASE_TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
     steps:
+      - name: Guard — need a tag target
+        run: |
+          if [ -z "${RELEASE_TAG}" ] || { [ "${{ github.ref_type }}" != "tag" ] && [ -z "${{ inputs.tag }}" ]; }; then
+            echo "::error::Run this on a tag ref, or pass -f tag=vX.Y.Z"; exit 1
+          fi
+          echo "Building into release: ${RELEASE_TAG}"
+        shell: bash
+
       - uses: actions/checkout@v4
 
       - name: Linux dependencies
@@ -40,7 +62,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev patchelf \
-            libayatana-appindicator3-dev build-essential file
+            libayatana-appindicator3-dev build-essential file xdg-utils
 
       - uses: pnpm/action-setup@v4
         with:
@@ -66,8 +88,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'nightly' }}
-          releaseName: "Mowl ${{ github.ref_type == 'tag' && github.ref_name || 'nightly' }}"
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: "Mowl ${{ env.RELEASE_TAG }}"
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
@@ -75,18 +97,23 @@ jobs:
   checksums:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
+    # Run as long as the build job didn't hard-fail (macOS is continue-on-error).
+    if: ${{ always() && needs.build.result != 'failure' && (github.ref_type == 'tag' || inputs.tag != '') }}
+    env:
+      RELEASE_TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
     steps:
-      - uses: robinraju/release-downloader@v1
-        with:
-          tag: ${{ github.ref_name }}
-          fileName: "*"
-          out-file-path: dist
-      - run: |
-          cd dist
-          sha256sum * > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+      # `gh release download` works on draft releases (robinraju's tag API does
+      # not). Re-hash from scratch so a re-run stays clean.
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist && cd dist
+          gh release download "${RELEASE_TAG}" --repo "${{ github.repository }}" --pattern '*' --clobber
+          rm -f SHA256SUMS.txt
+          sha256sum * | tee SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          draft: true
           files: dist/SHA256SUMS.txt
