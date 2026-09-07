@@ -42,18 +42,20 @@ portable native shell using the OS WebView instead of bundling Chromium.
 |---|---|
 | `index.html` | The single page. Toolbar buttons live here as static markup. |
 | `src/main.ts` | **Orchestrator.** App state, all wiring, every command call. Start here. |
-| `src/editor.ts` | Thin wrapper over one Crepe instance (`init` / `setContent` / `getMarkdown` / `setDirection` / `setSpellcheck` / `setDocPath`). Also the image `proxyDomURL` hook — see §4. |
+| `src/editor.ts` | Thin wrapper over one Crepe instance (`init` / `setContent` / `getMarkdown` / `setDirection` / `setSpellcheck` / `setDocPath` / `runBlockAction` / `insertText`). Also the image `proxyDomURL` hook — see §4, and `.use(emojiInputRule)`. |
 | `src/tabs.ts` | `Tab` model + `TabBar` (renders the strip, fires `onActivate` / `onCloseRequest` / `onStructureChange`). |
 | `src/theme.ts` | Resolves `system`/`light`/`dark`, swaps the compiled Crepe theme stylesheet at runtime. |
 | `src/link-clipboard.ts` | ProseMirror `$prose` plugin: paste a URL over a selection / `Ctrl+K` → link it. |
-| `src/block-menu.ts` | The `⠿` block menu (turn‑into, insert table / image / divider / blank line, duplicate, delete). Raw ProseMirror commands. |
+| `src/block-menu.ts` | The `⠿` block menu (turn‑into, insert table / image / divider / blank line, duplicate, delete). Raw ProseMirror commands. Exports `runBlockAction(crepe, id)` — the turn‑into entries reachable by `Ctrl/Cmd+0`–`7` from `main.ts`, built from the live selection via `targetFromSelection`. |
+| `src/emoji.ts` | `:shortcode:` input rule (`$prose`, same class as `find.ts`) + `EmojiPicker` popup (`#emoji-picker`, `Ctrl/Cmd+.`), backend‑agnostic like `find-bar.ts`. |
+| `src/emoji-data.ts` | Hand‑curated ~230 common emoji (glyph + shortcode + keywords) and alias map. Native Unicode only, no dependency. |
 | `src/markdown-serializer.ts` | `remarkStringifyOptionsCtx` tweaks: bullet‑list marker (`*`/`-`/`+`) and link/image handlers that stop `&` in URLs being escaped. Applied in `Editor.init` via `crepe.editor.config`. |
 | `src/find.ts` | `$prose` plugin for WYSIWYG find: scans text nodes for the query, decorates matches, exposes state via `findKey`. |
 | `src/find-bar.ts` | The find / replace bar UI (`#find-bar`). Backend‑agnostic — `main.ts` hands it a `FindTarget` for the editor or the source textarea. |
-| `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu. Theme tokens on `:root`. |
+| `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu + emoji picker. Theme tokens on `:root`. |
 | `src-tauri/src/lib.rs` | Tauri builder: plugins (single‑instance first), `AppState`, command registry, `.setup()` spawns the `settings.toml` watcher. `file_arg()` picks a Markdown path out of argv. |
 | `src-tauri/src/commands.rs` | All `#[tauri::command]`s: `get_settings`, `save_settings`, `read_document`, `write_document`, `render_html`, `read_image_data_url` (+ a local base64 encoder — no crate). `get_settings`'s payload also carries `version` (`CARGO_PKG_VERSION`) for the About panel. |
-| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (theme, direction, spellcheck, fonts, accent, quit_on_escape, list_marker, show_path, open_last_session) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
+| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (theme, direction, spellcheck, fonts, accent, quit_on_escape, list_marker, show_path, open_last_session, always_show_tabbar) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
 | `src-tauri/src/portable.rs` | Resolves the portable data dir (next to exe; on macOS next to the `.app`); writability check + OS‑config fallback. |
 | `src-tauri/src/export.rs` | `render_html`: Markdown → GFM HTML (comrak) wrapped in a self‑contained page. |
 | `src-tauri/src/mdfmt.rs` | `format_tables`: pretty‑prints GFM tables in a Markdown string. |
@@ -157,7 +159,9 @@ via `openUrl` (`@tauri-apps/plugin-opener`, covered by `opener:default`). Esc is
 handled in `wireShortcuts()` ahead of find-bar / quit-on-escape.
 
 ### A block‑menu (⠿) entry
-`src/block-menu.ts` → add an item to the right group in `GROUPS`.
+`src/block-menu.ts` → add an item to the right group in `GROUPS`. Give it an
+`id: BlockActionId` to also expose it as a `Ctrl/Cmd+N` shortcut (wire the key in
+`main.ts` `wireShortcuts()` → `editor.runBlockAction(id)`).
 - Selection‑based conversion → `turnInto(v => someProseMirrorCommand)`
   (it lifts list items out first).
 - Structural edit → `structural((view, target) => { …view.dispatch(tr)… })`

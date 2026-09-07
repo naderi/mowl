@@ -70,7 +70,16 @@ Markdownِ ساده و قابل‌حمل است.
 - **درج** یک جدول، یک تصویر، یک خط جداکننده یا یک خط خالی در بالا/پایین
 - **تکثیر** یا **حذف** بلوک
 
-نوعِ بلوکِ فعلی برجسته می‌شود تا همیشه بدانید چه چیزی را ویرایش می‌کنید.
+نوعِ بلوکِ فعلی برجسته می‌شود تا همیشه بدانید چه چیزی را ویرایش می‌کنید. نوع‌هایِ
+«تبدیل به» میان‌بُرِ صفحه‌کلید هم دارند — `Ctrl/Cmd+0`–`7` (متن، عنوان ۱ تا ۳،
+فهرست نقطه‌ای، فهرست شماره‌دار، نقل‌قول، بلوک کد) — که مثل منو روی گزینش اعمال
+می‌شود.
+
+### 😀 ایموجی
+
+`Ctrl/Cmd+.` را بزنید تا یک انتخابگرِ ایموجیِ قابل‌جست‌وجو باز شود، یا کافی است
+یک `:shortcode:` بنویسید (مثلِ `:tada:` ← 🎉 و `:+1:` ← 👍) که هنگامِ بستنِ
+دونقطه به ایموجی تبدیل می‌شود. یونیکدِ بومی — بدون تصویر و بدون دانلود.
 
 ### 📑 زبانه‌ها با بازیابی نشست
 
@@ -152,6 +161,8 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 | جایگزینی                          | `Ctrl/Cmd+H`       |
 | پیوند از کلیپ‌بورد                | `Ctrl/Cmd+K`       |
 | چسباندن نشانی روی متنِ انتخاب‌شده | `Ctrl/Cmd+V`       |
+| بلوک: متن / عنوان ۱ تا ۳ / فهرست‌ها / نقل‌قول / کد | `Ctrl/Cmd+0`–`7` |
+| درج ایموجی                        | `Ctrl/Cmd+.`       |
 
 ## Download
 
@@ -191,6 +202,7 @@ quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
 show_path = false           # show the full file path in the header, not just the name
 open_last_session = true    # reopen the previous session's tabs on startup
+always_show_tabbar = false  # keep the tab bar visible even with only one file open
 editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)

@@ -25,6 +25,7 @@ quit_on_escape = false      # when true, pressing Esc quits the app
 list_marker = "*"           # bullet-list marker written on save: "*" | "-" | "+"
 show_path = false           # show the full file path in the header, not just the name
 open_last_session = true    # reopen the previous session's tabs on startup
+always_show_tabbar = false  # keep the tab bar visible even with only one file open
 
 editor_font = ""            # WYSIWYG font family ("" = built-in default)
 editor_font_size = 16       # base editor size in px (headings scale from this)

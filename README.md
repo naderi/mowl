@@ -67,6 +67,15 @@ Hover any block and click the `⠿` handle for a quick menu that acts on that bl
 - **Duplicate** or **delete** the block
 
 The current block's type is highlighted so you always know what you're editing.
+The turn‑into types also have keyboard shortcuts — `Ctrl/Cmd+0`–`7` (Text, H1, H2,
+H3, bullet list, numbered list, quote, code block) — applied to the selection just
+like the menu.
+
+### 😀 Emoji
+
+Press `Ctrl/Cmd+.` for a searchable emoji picker, or just type a `:shortcode:`
+(e.g. `:tada:` → 🎉, `:+1:` → 👍) and it turns into the emoji as you close the
+colon. Native Unicode — no images, nothing downloaded.
 
 ### 📑 Tabs with session restore
 
@@ -146,6 +155,8 @@ you so in the window. Every release also ships a fully commented
 | Replace                      | `Ctrl/Cmd+H`       |
 | Link from clipboard          | `Ctrl/Cmd+K`       |
 | Paste URL onto selected text | `Ctrl/Cmd+V`       |
+| Block: Text / H1–H3 / lists / quote / code | `Ctrl/Cmd+0`–`7` |
+| Insert emoji                 | `Ctrl/Cmd+.`       |
 
 ## Download
 
@@ -183,6 +194,7 @@ quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
 show_path = false           # show the full file path in the header, not just the name
 open_last_session = true    # reopen the previous session's tabs on startup
+always_show_tabbar = false  # keep the tab bar visible even with only one file open
 editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)

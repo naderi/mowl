@@ -27,6 +27,8 @@ export function baseName(path: string | null): string {
 export class TabBar {
   tabs: Tab[] = [];
   activeId = "";
+  /** Keep the strip visible even with a single tab (settings-driven). */
+  private alwaysShow = false;
 
   /** Called after the active tab changes; `prev` is the tab we left (if any). */
   onActivate: (next: Tab, prev: Tab | null) => void = () => {};
@@ -47,6 +49,13 @@ export class TabBar {
 
   get active(): Tab | undefined {
     return this.tabs.find((t) => t.id === this.activeId);
+  }
+
+  /** Show the strip with a single tab, or hide it (the default). */
+  setAlwaysShow(on: boolean): void {
+    if (this.alwaysShow === on) return;
+    this.alwaysShow = on;
+    this.render();
   }
 
   findByPath(path: string): Tab | undefined {
@@ -116,7 +125,7 @@ export class TabBar {
   }
 
   render(): void {
-    this.el.hidden = this.tabs.length <= 1;
+    this.el.hidden = !this.alwaysShow && this.tabs.length <= 1;
     this.el.replaceChildren();
 
     for (const tab of this.tabs) {

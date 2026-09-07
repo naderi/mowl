@@ -8,7 +8,8 @@ import { editorViewCtx } from "@milkdown/kit/core";
 import type { EditorView } from "@milkdown/kit/prose/view";
 
 import { linkFromClipboard } from "./link-clipboard";
-import { installBlockMenu } from "./block-menu";
+import { installBlockMenu, runBlockAction, type BlockActionId } from "./block-menu";
+import { emojiInputRule } from "./emoji";
 import {
   configureMarkdownSerializer,
   type ListMarker,
@@ -93,7 +94,8 @@ export class Editor {
     crepe.editor
       .config((ctx) => configureMarkdownSerializer(ctx, marker))
       .use(linkFromClipboard)
-      .use(findPlugin);
+      .use(findPlugin)
+      .use(emojiInputRule);
     crepe.on((listener) => {
       listener.markdownUpdated(() => this.onChange());
     });
@@ -135,6 +137,32 @@ export class Editor {
 
   focus(): void {
     (this.host.querySelector(".ProseMirror") as HTMLElement | null)?.focus();
+  }
+
+  /** Turn the block(s) touched by the selection into `id`'s type — the same
+   *  conversion as the matching ⠿ menu entry (see block-menu.ts). */
+  runBlockAction(id: BlockActionId): void {
+    if (this.crepe) runBlockAction(this.crepe, id);
+  }
+
+  /** Insert plain text at the cursor (used for emoji). */
+  insertText(text: string): void {
+    const view = this.view();
+    if (!view) return;
+    view.dispatch(view.state.tr.insertText(text));
+    view.focus();
+  }
+
+  /** Viewport rectangle of the caret, for anchoring popups. */
+  caretRect(): DOMRect | null {
+    const view = this.view();
+    if (!view) return null;
+    try {
+      const c = view.coordsAtPos(view.state.selection.head);
+      return new DOMRect(c.left, c.top, c.right - c.left, c.bottom - c.top);
+    } catch {
+      return null;
+    }
   }
 
   // --- find / replace ----------------------------------------------------

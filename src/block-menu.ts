@@ -73,9 +73,23 @@ interface Target {
 }
 
 type Runner = (ctx: Ctx, target: Target) => void;
+
+/** Block types reachable by keyboard shortcut (Ctrl+0..7 — see main.ts). */
+export type BlockActionId =
+  | "text"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "bullet"
+  | "ordered"
+  | "quote"
+  | "code";
+
 interface Item {
   label: string;
   run: Runner;
+  /** Stable key for the keyboard-shortcut layer; menu-only items omit it. */
+  id?: BlockActionId;
   /** True when `node` (the top-level block by the handle) is already this type. */
   active?: (node: ProseNode) => boolean;
   /**
@@ -315,16 +329,16 @@ function buildTable(view: EditorView, rows = 3, cols = 3): ProseNode | null {
 
 const GROUPS: Item[][] = [
   [
-    { label: "Text", run: turnInto((v) => setBlockType(node(v, "paragraph"))), active: isType("paragraph") },
-    { label: "Heading 1", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 1 })), active: isHeading(1) },
-    { label: "Heading 2", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 2 })), active: isHeading(2) },
-    { label: "Heading 3", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 3 })), active: isHeading(3) },
+    { label: "Text", id: "text", run: turnInto((v) => setBlockType(node(v, "paragraph"))), active: isType("paragraph") },
+    { label: "Heading 1", id: "h1", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 1 })), active: isHeading(1) },
+    { label: "Heading 2", id: "h2", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 2 })), active: isHeading(2) },
+    { label: "Heading 3", id: "h3", run: turnInto((v) => setBlockType(node(v, "heading"), { level: 3 })), active: isHeading(3) },
   ],
   [
-    { label: "Bullet list", run: toList("bullet_list"), active: isType("bullet_list") },
-    { label: "Numbered list", run: toList("ordered_list"), active: isType("ordered_list") },
-    { label: "Quote", run: turnInto((v) => wrapIn(node(v, "blockquote")), "blockquote"), active: isType("blockquote") },
-    { label: "Code block", run: turnInto((v) => setBlockType(node(v, "code_block"))), active: isType("code_block") },
+    { label: "Bullet list", id: "bullet", run: toList("bullet_list"), active: isType("bullet_list") },
+    { label: "Numbered list", id: "ordered", run: toList("ordered_list"), active: isType("ordered_list") },
+    { label: "Quote", id: "quote", run: turnInto((v) => wrapIn(node(v, "blockquote")), "blockquote"), active: isType("blockquote") },
+    { label: "Code block", id: "code", run: turnInto((v) => setBlockType(node(v, "code_block"))), active: isType("code_block") },
     {
       label: "Table",
       multiBlock: false,
@@ -515,6 +529,76 @@ function resolveTarget(
   } catch {
     return null;
   }
+}
+
+/**
+ * Build a `Target` from the live selection instead of a hovered handle, so the
+ * keyboard-shortcut layer can reuse the exact same runners as the menu. Unlike
+ * `resolveTarget`, the selection here is the real one — nothing has collapsed
+ * it into a NodeSelection yet — so it is read straight from `view.state`.
+ */
+function targetFromSelection(view: EditorView): Target | null {
+  try {
+    const sel = view.state.selection;
+    const doc = view.state.doc;
+    // An AllSelection (Ctrl+A) resolves `$from` to the doc boundary (depth 0);
+    // step one position in so it lands inside the first block.
+    let $from = sel.$from;
+    if ($from.depth < 1) {
+      $from = doc.resolve(Math.min(sel.from + 1, Math.max(1, doc.content.size - 1)));
+    }
+    if ($from.depth < 1) return null;
+
+    let depth = 1;
+    for (let d = $from.depth; d > 0; d--) {
+      if (LIST_NAMES.includes($from.node(d).type.name)) {
+        depth = d;
+        break;
+      }
+    }
+    const from = $from.before(depth);
+    const node = $from.node(depth);
+    const to = from + node.nodeSize;
+    const target: Target = {
+      textPos: Math.min(Math.max(sel.head, from + 1), to - 1),
+      from,
+      to,
+      node,
+    };
+    const range = sel.empty
+      ? null
+      : { from: Math.min(sel.from, sel.to), to: Math.max(sel.from, sel.to) };
+    return withSelectionBlocks(view, target, depth === 1, range);
+  } catch {
+    return null;
+  }
+}
+
+const ITEM_BY_ID = new Map<BlockActionId, Item>(
+  GROUPS.flat()
+    .filter((it): it is Item & { id: BlockActionId } => it.id !== undefined)
+    .map((it) => [it.id, it]),
+);
+
+/**
+ * Apply a block-menu conversion to the current selection by shortcut. Uses the
+ * same runner (and therefore the same multi-block / lift-out-of-wrapper / merge
+ * behaviour) as clicking the matching menu entry.
+ */
+export function runBlockAction(crepe: Crepe, id: BlockActionId): void {
+  const item = ITEM_BY_ID.get(id);
+  if (!item) return;
+  crepe.editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx);
+    const target = targetFromSelection(view);
+    if (!target) return;
+    try {
+      item.run(ctx, target);
+    } catch (err) {
+      console.error("[mowl] block shortcut failed", err);
+    }
+    view.focus();
+  });
 }
 
 class BlockMenu {

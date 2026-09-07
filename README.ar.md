@@ -66,7 +66,15 @@
 - **إدراج** جدول أو صورة أو فاصل أو سطر فارغ فوق/تحت
 - **تكرار** الكتلة أو **حذفها**
 
-نوع الكتلة الحالية مميَّز حتى تعرف دائمًا ما الذي تحرّره.
+نوع الكتلة الحالية مميَّز حتى تعرف دائمًا ما الذي تحرّره. أنواع «تحويل إلى» لها
+أيضًا اختصارات لوحة المفاتيح — `Ctrl/Cmd+0`–`7` (نصّ، عنوان 1–3، قائمة نقطية،
+قائمة مرقَّمة، اقتباس، كتلة شيفرة) — تُطبَّق على التحديد تمامًا كما في القائمة.
+
+### 😀 الإيموجي
+
+اضغط `Ctrl/Cmd+.` لمنتقي إيموجي قابل للبحث، أو اكتب `:shortcode:` (مثل
+`:tada:` ← 🎉 و`:+1:` ← 👍) فيتحوّل إلى الإيموجي عند إغلاق النقطتين. Unicode
+أصليّ — بلا صور ولا تنزيل.
 
 ### 📑 ألسنة تبويب مع استعادة الجلسة
 
@@ -145,6 +153,8 @@
 | استبدال                 | `Ctrl/Cmd+H`       |
 | رابط من الحافظة         | `Ctrl/Cmd+K`       |
 | لصق رابط على نصّ محدَّد | `Ctrl/Cmd+V`       |
+| كتلة: نصّ / عنوان 1–3 / قوائم / اقتباس / شيفرة | `Ctrl/Cmd+0`–`7` |
+| إدراج إيموجي            | `Ctrl/Cmd+.`       |
 
 ## Download
 
@@ -181,6 +191,7 @@ quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
 show_path = false           # show the full file path in the header, not just the name
 open_last_session = true    # reopen the previous session's tabs on startup
+always_show_tabbar = false  # keep the tab bar visible even with only one file open
 editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)

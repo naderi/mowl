@@ -8,7 +8,9 @@ import { Editor } from "./editor";
 import { TabBar, baseName, type Tab } from "./tabs";
 import { applyTheme, nextTheme, onSystemThemeChange, type ThemePref } from "./theme";
 import { FindBar, type FindStatus, type FindTarget } from "./find-bar";
+import { EmojiPicker } from "./emoji";
 import { isListMarker, type ListMarker } from "./markdown-serializer";
+import type { BlockActionId } from "./block-menu";
 
 interface WindowState {
   width: number;
@@ -30,6 +32,8 @@ interface Settings {
   show_path: boolean;
   /** Reopen the previous session's tabs on startup. */
   open_last_session: boolean;
+  /** Keep the tab bar visible even when only one file is open. */
+  always_show_tabbar: boolean;
   editor_font: string;
   editor_font_size: number;
   source_font: string;
@@ -57,6 +61,7 @@ const titleEl = document.getElementById("doc-title") as HTMLElement;
 const editor = new Editor(editorHost);
 const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
 const findBar = new FindBar(editorHost);
+const emojiPicker = new EmojiPicker();
 
 let settings: Settings;
 let switching = false;
@@ -255,6 +260,16 @@ editor.onChange = () => {
   if (switching || sourceMode) return;
   markDirtyFromView();
 };
+
+emojiPicker.onPick = (glyph) => {
+  if (sourceMode) {
+    sourceEdit(glyph, sourceEl.selectionStart, sourceEl.selectionEnd);
+  } else {
+    editor.insertText(glyph);
+    markDirtyFromView();
+  }
+};
+emojiPicker.onClose = () => (sourceMode ? sourceEl : editor).focus();
 
 sourceEl.addEventListener("input", () => {
   if (sourceMode) markDirtyFromView();
@@ -715,6 +730,11 @@ function wireShortcuts(): void {
         e.key === "Escape" &&
         !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
       ) {
+        if (emojiPicker.isOpen) {
+          e.preventDefault();
+          emojiPicker.close();
+          return;
+        }
         if (!openMenuEl.hidden) {
           e.preventDefault();
           closeOpenMenu();
@@ -767,6 +787,20 @@ function wireShortcuts(): void {
       } else if (k === "h" && !e.shiftKey) {
         e.preventDefault();
         openFind(true);
+      } else if (k === "." && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        emojiPicker.open(sourceMode ? null : editor.caretRect());
+      } else if (
+        !e.shiftKey && !e.altKey &&
+        e.key >= "0" && e.key <= "7" && e.key.length === 1
+      ) {
+        // Ctrl+0..7 → block type, mirroring the ⠿ menu (WYSIWYG only).
+        if (sourceMode) return;
+        e.preventDefault();
+        const ids: BlockActionId[] = [
+          "text", "h1", "h2", "h3", "bullet", "ordered", "quote", "code",
+        ];
+        editor.runBlockAction(ids[Number(e.key)]);
       }
     },
     { capture: true },
@@ -926,6 +960,7 @@ async function bootstrap(): Promise<void> {
   applyAppearance();
   applyTheme(settings.theme);
   editor.setListMarker(settings.list_marker);
+  tabBar.setAlwaysShow(settings.always_show_tabbar);
   onSystemThemeChange(() => {});
 
   // React to hand edits of settings.toml (the file watcher emits this).
@@ -937,6 +972,8 @@ async function bootstrap(): Promise<void> {
     settings.quit_on_escape = ext.quit_on_escape;
     settings.show_path = ext.show_path;
     settings.open_last_session = ext.open_last_session;
+    settings.always_show_tabbar = ext.always_show_tabbar;
+    tabBar.setAlwaysShow(ext.always_show_tabbar);
     settings.editor_font = ext.editor_font;
     settings.editor_font_size = ext.editor_font_size;
     settings.source_font = ext.source_font;

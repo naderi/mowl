@@ -57,6 +57,8 @@ pub struct Settings {
     pub show_path: bool,
     /// Reopen the previous session's tabs on startup.
     pub open_last_session: bool,
+    /// Keep the tab bar visible even when only one file is open.
+    pub always_show_tabbar: bool,
     /// WYSIWYG editor font family ("" = built-in default).
     pub editor_font: String,
     /// Base editor font size in px (headings scale from this).
@@ -88,6 +90,7 @@ impl Default for Settings {
             list_marker: "*".to_string(),
             show_path: false,
             open_last_session: true,
+            always_show_tabbar: false,
             editor_font: String::new(),
             editor_font_size: 16,
             source_font: String::new(),

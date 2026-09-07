@@ -253,7 +253,66 @@ body {
 #editor .milkdown .ProseMirror { font-size: var(--editor-font-size); }
 
 /* --- find / replace bar --- */
-#tabs[hidden], #find-bar[hidden], #about[hidden], #open-menu[hidden] { display: none; }
+#tabs[hidden], #find-bar[hidden], #about[hidden], #open-menu[hidden],
+#emoji-picker[hidden] { display: none; }
+
+/* --- emoji picker (Ctrl/Cmd+.) --- */
+#emoji-picker {
+  position: fixed;
+  z-index: 60;
+  width: 320px;
+  padding: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+#emoji-picker .emoji-search {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+}
+#emoji-picker .emoji-search:focus {
+  outline: none;
+  border-color: var(--accent, #4a7dff);
+}
+#emoji-picker .emoji-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  max-height: 216px;
+  overflow-y: auto;
+}
+#emoji-picker .emoji-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+#emoji-picker .emoji-cell:hover { background: var(--hover); }
+#emoji-picker .emoji-cell.sel {
+  background: color-mix(in srgb, var(--accent, #4a7dff) 20%, transparent);
+}
+#emoji-picker .emoji-empty {
+  grid-column: 1 / -1;
+  padding: 16px;
+  text-align: center;
+  color: var(--muted, #888);
+  font-size: 13px;
+}
 
 /* --- open menu (New / Open) --- */
 #open-menu {

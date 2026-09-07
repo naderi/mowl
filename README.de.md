@@ -78,6 +78,15 @@ diesen Block wirkt:
 - Block **duplizieren** oder **löschen**
 
 Der aktuelle Blocktyp ist hervorgehoben, damit du immer weißt, was du bearbeitest.
+Die „Umwandeln in"-Typen haben auch Tastenkürzel — `Strg/Cmd+0`–`7` (Text, Ü1, Ü2,
+Ü3, Aufzählung, nummerierte Liste, Zitat, Codeblock) — angewendet auf die Auswahl,
+genau wie im Menü.
+
+### 😀 Emoji
+
+`Strg/Cmd+.` öffnet eine durchsuchbare Emoji-Auswahl, oder tippe einfach einen
+`:shortcode:` (z. B. `:tada:` → 🎉, `:+1:` → 👍) — er wird beim schließenden
+Doppelpunkt zum Emoji. Natives Unicode, keine Bilder, nichts wird geladen.
 
 ### 📑 Tabs mit Sitzungswiederherstellung
 
@@ -163,6 +172,8 @@ Jede Veröffentlichung bringt außerdem eine vollständig kommentierte
 | Ersetzen                         | `Strg/Cmd+H`       |
 | Link aus Zwischenablage          | `Strg/Cmd+K`       |
 | URL auf markierten Text einfügen | `Strg/Cmd+V`       |
+| Block: Text / Ü1–Ü3 / Listen / Zitat / Code | `Strg/Cmd+0`–`7` |
+| Emoji einfügen                   | `Strg/Cmd+.`       |
 
 ## Download
 
@@ -202,6 +213,7 @@ quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
 show_path = false           # show the full file path in the header, not just the name
 open_last_session = true    # reopen the previous session's tabs on startup
+always_show_tabbar = false  # keep the tab bar visible even with only one file open
 editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)

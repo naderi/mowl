@@ -64,7 +64,15 @@
 - **הוסף** טבלה, תמונה, קו מפריד או שורה ריקה מעל/מתחת
 - **שכפל** או **מחק** את הבלוק
 
-סוג הבלוק הנוכחי מודגש כך שתמיד תדע מה אתה עורך.
+סוג הבלוק הנוכחי מודגש כך שתמיד תדע מה אתה עורך. לסוגי «הפוך ל־» יש גם קיצורי
+מקלדת — `Ctrl/Cmd+0`–`7` (טקסט, כותרת 1–3, רשימת תבליטים, רשימה ממוספרת, ציטוט,
+בלוק קוד) — המוחלים על הבחירה בדיוק כמו בתפריט.
+
+### 😀 אימוג'י
+
+`Ctrl/Cmd+.` פותח בורר אימוג'י עם חיפוש, או פשוט הקלד `:shortcode:` (למשל
+`:tada:` ← 🎉 ו־`:+1:` ← 👍) והוא הופך לאימוג'י עם הנקודתיים הסוגרות. יוניקוד
+מקורי — בלי תמונות, שום דבר לא יורד.
 
 ### 📑 לשוניות עם שחזור הפעלה
 
@@ -142,6 +150,8 @@
 | החלפה                     | `Ctrl/Cmd+H`       |
 | קישור מהלוח               | `Ctrl/Cmd+K`       |
 | הדבקת כתובת על טקסט מסומן | `Ctrl/Cmd+V`       |
+| בלוק: טקסט / כותרת 1–3 / רשימות / ציטוט / קוד | `Ctrl/Cmd+0`–`7` |
+| הוספת אימוג'י             | `Ctrl/Cmd+.`       |
 
 ## Download
 
@@ -178,6 +188,7 @@ quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
 show_path = false           # show the full file path in the header, not just the name
 open_last_session = true    # reopen the previous session's tabs on startup
+always_show_tabbar = false  # keep the tab bar visible even with only one file open
 editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)
