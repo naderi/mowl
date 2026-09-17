@@ -48,6 +48,18 @@ function graphemeBoundaries(text: string): number[] {
 export const rtlArrowKeys = $prose(() =>
   new Plugin({
     key: new PluginKey("mowl-rtl-arrow-keys"),
+    view() {
+      let last = -1;
+      return {
+        update(view) {
+          const pos = view.state.selection.$head.pos;
+          if (pos !== last) {
+            console.log("[rtl-arrow] selection now at", pos, "(was", last, ")", new Error().stack?.split("\n").slice(1, 5).join(" | "));
+            last = pos;
+          }
+        },
+      };
+    },
     props: {
       handleKeyDown(view, event) {
         if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return false;
@@ -82,7 +94,14 @@ export const rtlArrowKeys = $prose(() =>
         view.dispatch(
           view.state.tr.setSelection(TextSelection.create(view.state.doc, newPos)).scrollIntoView(),
         );
-        console.log("[rtl-arrow] moved", $head.pos, "->", newPos);
+        console.log(
+          "[rtl-arrow] moved",
+          $head.pos,
+          "->",
+          newPos,
+          "actual post-dispatch pos:",
+          view.state.selection.$head.pos,
+        );
         return true;
       },
     },
