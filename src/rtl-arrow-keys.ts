@@ -74,10 +74,14 @@ export const rtlArrowKeys = $prose(() =>
       const onRawSelectionChange = () => {
         const sel = document.getSelection();
         console.log(
-          "[rtl-arrow] RAW selectionchange:",
-          "focusOffset", sel?.focusOffset,
-          "anchorOffset", sel?.anchorOffset,
-          "focusNode text", sel?.focusNode?.textContent?.slice(0, 20),
+          "[rtl-arrow]",
+          performance.now().toFixed(1),
+          "RAW selectionchange: focusOffset",
+          sel?.focusOffset,
+          "anchorOffset",
+          sel?.anchorOffset,
+          "text",
+          sel?.focusNode?.textContent?.slice(0, 20),
         );
       };
       document.addEventListener("selectionchange", onRawSelectionChange);
@@ -85,7 +89,15 @@ export const rtlArrowKeys = $prose(() =>
         update(view) {
           const pos = view.state.selection.$head.pos;
           if (pos !== last) {
-            console.log("[rtl-arrow] selection now at", pos, "(was", last, ")");
+            console.log(
+              "[rtl-arrow]",
+              performance.now().toFixed(1),
+              "selection now at",
+              pos,
+              "(was",
+              last,
+              ")",
+            );
             last = pos;
           }
         },
@@ -96,6 +108,17 @@ export const rtlArrowKeys = $prose(() =>
     },
     props: {
       handleKeyDown(view, event) {
+        if (event.key === "ArrowLeft" || event.key === "ArrowRight")
+          console.log(
+            "[rtl-arrow]",
+            performance.now().toFixed(1),
+            "keydown",
+            event.key,
+            "repeat:",
+            event.repeat,
+            "defaultPrevented:",
+            event.defaultPrevented,
+          );
         if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return false;
         if (event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
         if (view.dom.getAttribute("dir") !== "rtl") return false;
