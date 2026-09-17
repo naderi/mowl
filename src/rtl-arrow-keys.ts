@@ -32,26 +32,47 @@ export const rtlArrowKeys = $prose(
       key: new PluginKey("mowl-rtl-arrow-keys"),
       props: {
         handleKeyDown(view, event) {
+          const log = (...args: unknown[]) => console.debug("[rtl-arrow]", ...args);
           if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return false;
-          if (event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
-          if (view.dom.getAttribute("dir") !== "rtl") return false;
+          if (event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) {
+            log("bail: modifier held");
+            return false;
+          }
+          if (view.dom.getAttribute("dir") !== "rtl") {
+            log("bail: view.dom dir is", view.dom.getAttribute("dir"));
+            return false;
+          }
           // Code blocks run their own CodeMirror instance and are kept LTR.
-          if ((event.target as HTMLElement | null)?.closest?.(".cm-editor")) return false;
+          if ((event.target as HTMLElement | null)?.closest?.(".cm-editor")) {
+            log("bail: inside code block");
+            return false;
+          }
 
           const { selection } = view.state;
-          if (!(selection instanceof TextSelection) || !selection.empty) return false;
+          if (!(selection instanceof TextSelection) || !selection.empty) {
+            log("bail: not a collapsed TextSelection", selection);
+            return false;
+          }
 
           const dir: -1 | 1 = event.key === "ArrowLeft" ? -1 : 1;
-          if (hasAdjacentLeaf(view, dir)) return false;
+          if (hasAdjacentLeaf(view, dir)) {
+            log("bail: adjacent leaf/atom node");
+            return false;
+          }
 
           const domSel = document.getSelection();
-          if (!domSel || typeof domSel.modify !== "function") return false;
+          if (!domSel || typeof domSel.modify !== "function") {
+            log("bail: no Selection.modify support", domSel);
+            return false;
+          }
 
           const { anchorNode, anchorOffset, focusNode: prevNode, focusOffset: prevOffset } = domSel;
           domSel.modify("move", dir < 0 ? "left" : "right", "character");
           const { focusNode, focusOffset } = domSel;
+          log("modify result", { prevNode, prevOffset, focusNode, focusOffset });
 
           if (!focusNode || !view.dom.contains(focusNode)) {
+            log("bail: landed outside editor, restoring", focusNode);
             // Ran off the start/end of the whole document — put it back and
             // let the normal handling chain deal with it.
             try {
@@ -67,13 +88,15 @@ export const rtlArrowKeys = $prose(
           let pos: number;
           try {
             pos = view.posAtDOM(focusNode, focusOffset);
-          } catch {
+          } catch (e) {
+            log("bail: posAtDOM threw", e);
             return false;
           }
 
           event.preventDefault();
           const tr = view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(pos)));
           view.dispatch(tr.scrollIntoView());
+          log("handled: moved to pos", pos);
           return true;
         },
       },
