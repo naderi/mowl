@@ -61,7 +61,9 @@ function graphemeBoundaries(text: string): number[] {
  *  internally by prosemirror-view itself) for telling it to ignore the next
  *  native `selectionchange` rather than syncing the model to it. */
 function suppressNextSelectionChange(view: EditorView): void {
-  (view as unknown as { domObserver: { suppressSelectionUpdates(): void } }).domObserver?.suppressSelectionUpdates();
+  const observer = (view as unknown as { domObserver?: { suppressSelectionUpdates(): void } }).domObserver;
+  console.log("[rtl-arrow] domObserver found:", !!observer);
+  observer?.suppressSelectionUpdates();
 }
 
 export const rtlArrowKeys = $prose(() =>
@@ -69,6 +71,16 @@ export const rtlArrowKeys = $prose(() =>
     key: new PluginKey("mowl-rtl-arrow-keys"),
     view() {
       let last = -1;
+      const onRawSelectionChange = () => {
+        const sel = document.getSelection();
+        console.log(
+          "[rtl-arrow] RAW selectionchange:",
+          "focusOffset", sel?.focusOffset,
+          "anchorOffset", sel?.anchorOffset,
+          "focusNode text", sel?.focusNode?.textContent?.slice(0, 20),
+        );
+      };
+      document.addEventListener("selectionchange", onRawSelectionChange);
       return {
         update(view) {
           const pos = view.state.selection.$head.pos;
@@ -76,6 +88,9 @@ export const rtlArrowKeys = $prose(() =>
             console.log("[rtl-arrow] selection now at", pos, "(was", last, ")");
             last = pos;
           }
+        },
+        destroy() {
+          document.removeEventListener("selectionchange", onRawSelectionChange);
         },
       };
     },
