@@ -143,7 +143,7 @@ function applyAppearance(): void {
 function applyDirection(dir: "ltr" | "rtl"): void {
   editor.setDirection(dir);
   editorHost.dir = dir;
-  sourceEl.dir = "ltr"; // source is always left-to-right
+  sourceEl.dir = dir;
   document.getElementById("btn-ltr")?.classList.toggle("active", dir === "ltr");
   document.getElementById("btn-rtl")?.classList.toggle("active", dir === "rtl");
 }
@@ -163,21 +163,12 @@ onLangChange(() => {
   tabBar.render();
   updateSourceButton();
   updateThemeButton();
-  updateDirButtons();
   updateTitle();
 });
 
-/** RTL/LTR make no sense for raw Markdown — disable them in source view. */
-function updateDirButtons(): void {
-  for (const id of ["btn-ltr", "btn-rtl"]) {
-    const b = document.getElementById(id) as HTMLButtonElement | null;
-    if (b) b.disabled = sourceMode;
-  }
-}
-
 function setDirection(dir: "ltr" | "rtl"): void {
   const tab = tabBar.active;
-  if (sourceMode || !tab || tab.direction === dir) return;
+  if (!tab || tab.direction === dir) return;
   tab.direction = dir;
   applyDirection(dir);
   persistSoon();
@@ -615,7 +606,6 @@ function toggleSource(): void {
   tab.dirty = tab.content !== tab.saved;
   tabBar.refreshDirty();
   updateSourceButton();
-  updateDirButtons();
   updateTitle();
   (sourceMode ? sourceEl : editor).focus();
   // Last: focusing the textarea scrolls its caret (end of the freshly set
@@ -1080,7 +1070,7 @@ async function bootstrap(): Promise<void> {
     updateThemeButton();
     // `direction` in settings.toml is only the default for new tabs now; the
     // active document keeps its own direction. Just refresh the buttons.
-    if (!sourceMode) applyDirection(tabBar.active?.direction ?? "ltr");
+    applyDirection(tabBar.active?.direction ?? "ltr");
     editor.setSpellcheck(settings.spellcheck);
     updateTitle();
     settingsPanel.refresh();
@@ -1139,7 +1129,6 @@ async function bootstrap(): Promise<void> {
   wireOpenMenu();
   updateSourceButton();
   updateThemeButton();
-  updateDirButtons();
   wireShortcuts();
   await wireWindowState();
 }
