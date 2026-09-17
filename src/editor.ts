@@ -15,6 +15,7 @@ import {
   type BlockMenuHandle,
 } from "./block-menu";
 import { emojiInputRule } from "./emoji";
+import { rtlArrowKeys } from "./rtl-arrow-keys";
 import { t } from "./i18n";
 import {
   configureMarkdownSerializer,
@@ -102,7 +103,8 @@ export class Editor {
       .config((ctx) => configureMarkdownSerializer(ctx, marker))
       .use(linkFromClipboard)
       .use(findPlugin)
-      .use(emojiInputRule);
+      .use(emojiInputRule)
+      .use(rtlArrowKeys);
     crepe.on((listener) => {
       listener.markdownUpdated(() => this.onChange());
     });
