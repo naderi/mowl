@@ -175,20 +175,16 @@ screen).
 
 Grab the latest build from the [Releases](../../releases) page.
 
-- **Windows (x64)** — available now: portable `Mowl.exe` (\~7 MB, no install),
-  the NSIS installer, or via [Scoop](https://scoop.sh):
+- **Windows (x64)** — portable `Mowl.exe` (\~7 MB, no install), the NSIS
+  installer, or via [Scoop](https://scoop.sh):
 
   ```powershell
   scoop bucket add naderi https://github.com/naderi/scoop-bucket
   scoop install naderi/mowl
   ```
 
-- **macOS** (x64 + arm64) and **Linux** (x64 + arm64 AppImage) — *coming soon.*
-  The cross‑platform release pipeline is in place
-  ([`.github/workflows/release.yml`](.github/workflows/release.yml)); these builds
-  will land in a future tagged release. Until then, build from source on the
-  target OS (see [Building](#building)) — Mowl is a Tauri app and runs on all
-  three.
+- **macOS** — universal `.dmg` (Intel + Apple Silicon)
+- **Linux** — `.AppImage`, `.deb`, or `.rpm` (x64 + arm64)
 
 Builds are **not** code‑signed or notarized, so the OS may warn on first launch:
 
