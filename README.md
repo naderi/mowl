@@ -4,11 +4,13 @@
 
 # Mowl
 
-**A minimalist, portable WYSIWYG Markdown editor.**
+**A minimalist, portable WYSIWYG Markdown editor — with full right‑to‑left
+(RTL) support.**
 
 Type Markdown, see it formatted inline — Typora‑style. Powerful enough for real
-writing (tables, math, code, footnotes, RTL), yet a single \~7 MB executable that
-starts instantly and stays out of your way.
+writing (tables, math, code, footnotes, and right‑to‑left text for Persian,
+Arabic and Hebrew), yet a single \~7 MB executable that starts instantly and
+stays out of your way.
 
 [Features](#features) · [Screenshots](#screenshots) · [Download](#download) · [Configuration](#configuration) · [Building](#building)
 
@@ -50,12 +52,14 @@ resolved against the document's own folder (`./assets/diagram.png`,
 `../shared/logo.svg`) and absolute local paths — not just `http(s)` URLs. Add one
 from the `⠿` block menu ("Image"), then paste a link or pick a file.
 
-### ↔️ Right‑to‑left support
+### ↔️ Right‑to‑left (RTL) Markdown editing
 
-One click toggles the whole document between **LTR and RTL** for Persian, Arabic
-or Hebrew writing. The choice is remembered per install. Code blocks are always
-kept left‑to‑right — even inside an RTL document — and the direction is carried
-through to HTML export (`<html dir="rtl">`).
+Mowl is a Markdown editor with genuine **RTL support**, not an LTR editor with a
+CSS flip bolted on. One click toggles the whole document between **LTR and RTL**
+for Persian, Arabic or Hebrew writing, quotes and lists included. The choice is
+remembered per install. Code blocks are always kept left‑to‑right — even inside
+an RTL document — and the direction is carried through to HTML export
+(`<html dir="rtl">`).
 
 ### 🧱 Block menu
 
@@ -231,10 +235,12 @@ pnpm exec tsc --noEmit               # frontend typecheck
 cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
 ```
 
-**Cutting a release:** bump `version` in **both** `package.json` and
-`src-tauri/tauri.conf.json`, then push a `v*` tag —
-`.github/workflows/release.yml` builds Windows / macOS / Linux (x64 + arm64) and
-opens a draft GitHub release with checksums.
+**Cutting a release:** bump `version` in `package.json`,
+`src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`, push a `v*` tag, then
+run [`.github/workflows/release.yml`](.github/workflows/release.yml) manually
+(Actions tab or `gh workflow run release.yml --ref v1.5.1`) — it builds
+Windows / macOS / Linux (x64 + arm64) and opens a draft GitHub release with
+checksums.
 
 Extending Mowl? Read **[ARCHITECTURE.md](ARCHITECTURE.md)** — it maps every file
 and shows how to add toolbar buttons, block‑menu items, settings and commands.

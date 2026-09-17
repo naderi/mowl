@@ -184,6 +184,17 @@ body {
   text-align: left;
 }
 
+/* Crepe's blockquote indent/bar are physical (left) properties, so they
+   don't flip on their own when the ProseMirror root switches to RTL. */
+[dir="rtl"] .milkdown .ProseMirror blockquote {
+  padding-left: 0;
+  padding-right: 40px;
+}
+[dir="rtl"] .milkdown .ProseMirror blockquote::before {
+  left: auto;
+  right: 0;
+}
+
 #source {
   flex: 1;
   min-height: 0;
