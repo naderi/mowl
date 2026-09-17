@@ -1,20 +1,26 @@
-// ProseMirror's default Left/Right arrow handling (`selectHorizontally` in
-// prosemirror-view) probes `view.endOfTextblock()` on every keypress with a
-// collapsed cursor, to decide whether the move would leave the text block.
-// That probe calls the native `Selection.modify()` purely to check the
-// outcome, then tries to restore the selection to where it was — a restore
-// that only works correctly on Firefox, via the Firefox-only
-// `caretBidiLevel` API. On Chromium (WebView2/Edge, what Tauri uses on
-// Windows), there's no equivalent hook, so the probe corrupts the browser's
-// internal bidi caret state on every arrow press. In right-to-left text this
-// surfaces as the cursor getting stuck oscillating near the start/end of a
-// line. See https://github.com/ProseMirror/prosemirror/issues/960.
+// Left/Right arrow-key navigation is broken for right-to-left text in this
+// app's WebView2 runtime: the native `Selection.modify("move", "left"/
+// "right", "character")` primitive — the same one both the browser's default
+// key handling and ProseMirror's own `endOfTextblock` probe rely on — simply
+// gets stuck at certain positions within RTL text instead of advancing.
+// Confirmed by instrumenting it directly: repeated ArrowRight/ArrowLeft
+// presses kept resolving to the exact same document position instead of
+// moving further each time.
 //
-// Work around it for the common case — moving through plain text, nothing
-// special adjacent — by performing the real native move once ourselves and
-// syncing ProseMirror's selection to match, instead of probing then
-// discarding. Anything with an atom/leaf neighbour (images, hard breaks,
-// list/node boundaries) is left to ProseMirror's own handling untouched.
+// Since the native primitive itself is unreliable here, don't use it at all.
+// Compute the new cursor position purely from the ProseMirror document
+// model: physical ArrowRight moves the caret visually right, which for RTL
+// text means logically *backward* (toward the start of the string);
+// physical ArrowLeft means logically forward. Move by one Unicode grapheme
+// cluster (via Intl.Segmenter) so combining marks (e.g. Hebrew niqqud,
+// Arabic tashkeel) and surrogate pairs move as a unit.
+//
+// This only handles a single run of plain text within the current
+// paragraph/heading — anything with an adjacent atom/leaf node (images,
+// hard breaks), an offset that doesn't line up with a grapheme boundary
+// (e.g. an inline atom elsewhere in the block throwing off the count), or a
+// move that would leave the block is left to ProseMirror's existing
+// (unreliable, but no worse than before) handling.
 import { Plugin, PluginKey, TextSelection } from "@milkdown/kit/prose/state";
 import { $prose } from "@milkdown/kit/utils";
 import type { EditorView } from "@milkdown/kit/prose/view";
@@ -26,85 +32,59 @@ function hasAdjacentLeaf(view: EditorView, dir: -1 | 1): boolean {
   return !!node && !node.isText;
 }
 
-const log = (...args: unknown[]) => console.log("[rtl-arrow]", ...args);
+/** Offsets of every grapheme-cluster boundary in `text`, from 0 to text.length. */
+function graphemeBoundaries(text: string): number[] {
+  const bounds = [0];
+  const SegmenterCtor = (Intl as { Segmenter?: new (locale: undefined, opts: { granularity: string }) => { segment(s: string): Iterable<{ index: number; segment: string }> } }).Segmenter;
+  if (SegmenterCtor) {
+    for (const { index, segment } of new SegmenterCtor(undefined, { granularity: "grapheme" }).segment(text))
+      bounds.push(index + segment.length);
+  } else {
+    for (let i = 0; i < text.length; i++) bounds.push(i + 1);
+  }
+  return bounds;
+}
 
-export const rtlArrowKeys = $prose(() => {
-  log("plugin constructed");
-  return new Plugin({
+export const rtlArrowKeys = $prose(() =>
+  new Plugin({
     key: new PluginKey("mowl-rtl-arrow-keys"),
-    view() {
-      log("plugin view attached");
-      return {};
-    },
     props: {
       handleKeyDown(view, event) {
-          log("keydown", event.key, "dir attr:", view.dom.getAttribute("dir"));
-          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return false;
-          if (event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) {
-            log("bail: modifier held");
-            return false;
-          }
-          if (view.dom.getAttribute("dir") !== "rtl") {
-            log("bail: view.dom dir is", view.dom.getAttribute("dir"));
-            return false;
-          }
-          // Code blocks run their own CodeMirror instance and are kept LTR.
-          if ((event.target as HTMLElement | null)?.closest?.(".cm-editor")) {
-            log("bail: inside code block");
-            return false;
-          }
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return false;
+        if (event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
+        if (view.dom.getAttribute("dir") !== "rtl") return false;
+        // Code blocks run their own CodeMirror instance and are kept LTR.
+        if ((event.target as HTMLElement | null)?.closest?.(".cm-editor")) return false;
 
-          const { selection } = view.state;
-          if (!(selection instanceof TextSelection) || !selection.empty) {
-            log("bail: not a collapsed TextSelection", selection);
-            return false;
-          }
+        const { selection } = view.state;
+        if (!(selection instanceof TextSelection) || !selection.empty) return false;
 
-          const dir: -1 | 1 = event.key === "ArrowLeft" ? -1 : 1;
-          if (hasAdjacentLeaf(view, dir)) {
-            log("bail: adjacent leaf/atom node");
-            return false;
-          }
+        // Physical Right = visually right = logically backward in RTL text.
+        const logicalDir: -1 | 1 = event.key === "ArrowRight" ? -1 : 1;
+        if (hasAdjacentLeaf(view, logicalDir)) return false;
 
-          const domSel = document.getSelection();
-          if (!domSel || typeof domSel.modify !== "function") {
-            log("bail: no Selection.modify support", domSel);
-            return false;
-          }
+        const { $head } = selection;
+        const bounds = graphemeBoundaries($head.parent.textContent);
+        const at = bounds.indexOf($head.parentOffset);
+        if (at === -1) {
+          console.log("[rtl-arrow] bail: offset", $head.parentOffset, "not in bounds", bounds);
+          return false;
+        }
 
-          const { anchorNode, anchorOffset, focusNode: prevNode, focusOffset: prevOffset } = domSel;
-          domSel.modify("move", dir < 0 ? "left" : "right", "character");
-          const { focusNode, focusOffset } = domSel;
-          log("modify result", { prevNode, prevOffset, focusNode, focusOffset });
+        const target = at + logicalDir;
+        if (target < 0 || target >= bounds.length) {
+          console.log("[rtl-arrow] bail: would leave block, at", at, "of", bounds.length);
+          return false;
+        }
 
-          if (!focusNode || !view.dom.contains(focusNode)) {
-            log("bail: landed outside editor, restoring", focusNode);
-            // Ran off the start/end of the whole document — put it back and
-            // let the normal handling chain deal with it.
-            try {
-              domSel.collapse(anchorNode, anchorOffset ?? 0);
-              if (prevNode && (prevNode !== anchorNode || prevOffset !== anchorOffset))
-                domSel.extend(prevNode, prevOffset ?? 0);
-            } catch {
-              /* nothing sane to restore to */
-            }
-            return false;
-          }
-
-          let pos: number;
-          try {
-            pos = view.posAtDOM(focusNode, focusOffset);
-          } catch (e) {
-            log("bail: posAtDOM threw", e);
-            return false;
-          }
-
-          event.preventDefault();
-          const tr = view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(pos)));
-          view.dispatch(tr.scrollIntoView());
-          log("handled: moved to pos", pos);
-          return true;
-        },
+        const newPos = $head.start() + bounds[target];
+        event.preventDefault();
+        view.dispatch(
+          view.state.tr.setSelection(TextSelection.create(view.state.doc, newPos)).scrollIntoView(),
+        );
+        console.log("[rtl-arrow] moved", $head.pos, "->", newPos);
+        return true;
       },
-  });
-});
+    },
+  }),
+);
