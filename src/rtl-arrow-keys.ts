@@ -26,13 +26,19 @@ function hasAdjacentLeaf(view: EditorView, dir: -1 | 1): boolean {
   return !!node && !node.isText;
 }
 
-export const rtlArrowKeys = $prose(
-  () =>
-    new Plugin({
-      key: new PluginKey("mowl-rtl-arrow-keys"),
-      props: {
-        handleKeyDown(view, event) {
-          const log = (...args: unknown[]) => console.debug("[rtl-arrow]", ...args);
+const log = (...args: unknown[]) => console.log("[rtl-arrow]", ...args);
+
+export const rtlArrowKeys = $prose(() => {
+  log("plugin constructed");
+  return new Plugin({
+    key: new PluginKey("mowl-rtl-arrow-keys"),
+    view() {
+      log("plugin view attached");
+      return {};
+    },
+    props: {
+      handleKeyDown(view, event) {
+          log("keydown", event.key, "dir attr:", view.dom.getAttribute("dir"));
           if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return false;
           if (event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) {
             log("bail: modifier held");
@@ -100,5 +106,5 @@ export const rtlArrowKeys = $prose(
           return true;
         },
       },
-    }),
-);
+  });
+});
