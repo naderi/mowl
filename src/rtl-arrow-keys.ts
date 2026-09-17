@@ -1,25 +1,29 @@
 // Left/Right arrow-key navigation is broken for right-to-left text in this
-// app's WebView2 runtime: the native `Selection.modify("move", "left"/
-// "right", "character")` primitive — the same one both the browser's default
-// key handling and ProseMirror's own `endOfTextblock` probe rely on — simply
-// gets stuck at certain positions within RTL text instead of advancing.
-// Confirmed by instrumenting it directly: repeated ArrowRight/ArrowLeft
-// presses kept resolving to the exact same document position instead of
-// moving further each time.
+// app's WebView2 runtime, in two compounding ways (both confirmed by direct
+// instrumentation):
 //
-// Since the native primitive itself is unreliable here, don't use it at all.
-// Compute the new cursor position purely from the ProseMirror document
-// model: physical ArrowRight moves the caret visually right, which for RTL
-// text means logically *backward* (toward the start of the string);
-// physical ArrowLeft means logically forward. Move by one Unicode grapheme
-// cluster (via Intl.Segmenter) so combining marks (e.g. Hebrew niqqud,
-// Arabic tashkeel) and surrogate pairs move as a unit.
+// 1. The native `Selection.modify("move", "left"/"right", "character")`
+//    primitive — the one both the browser's default key handling and
+//    ProseMirror's own `endOfTextblock` probe rely on — gets stuck at
+//    certain positions in RTL text instead of advancing.
+// 2. Even setting the DOM selection directly (bypassing `modify()`) doesn't
+//    stick: shortly after, the browser fires a native `selectionchange`
+//    event reporting a *different* (wrong) caret position for the same
+//    bidi-boundary spot, and ProseMirror's own `domObserver` — which
+//    listens for `selectionchange` to pick up selection changes it didn't
+//    cause itself (e.g. mouse clicks) — dutifully syncs the document model
+//    back to that wrong position, undoing the fix a tick later.
+//
+// So: compute the new cursor position purely from the ProseMirror document
+// model (move by one Unicode grapheme cluster via Intl.Segmenter, so
+// combining marks and surrogate pairs move as a unit — see
+// graphemeBoundaries), and tell the view's DOM observer to ignore the
+// bogus follow-up `selectionchange` instead of trusting it.
 //
 // This only handles a single run of plain text within the current
 // paragraph/heading — anything with an adjacent atom/leaf node (images,
-// hard breaks), an offset that doesn't line up with a grapheme boundary
-// (e.g. an inline atom elsewhere in the block throwing off the count), or a
-// move that would leave the block is left to ProseMirror's existing
+// hard breaks), an offset that doesn't line up with a grapheme boundary, or
+// a move that would leave the block is left to ProseMirror's existing
 // (unreliable, but no worse than before) handling.
 import { Plugin, PluginKey, TextSelection } from "@milkdown/kit/prose/state";
 import { $prose } from "@milkdown/kit/utils";
@@ -35,7 +39,14 @@ function hasAdjacentLeaf(view: EditorView, dir: -1 | 1): boolean {
 /** Offsets of every grapheme-cluster boundary in `text`, from 0 to text.length. */
 function graphemeBoundaries(text: string): number[] {
   const bounds = [0];
-  const SegmenterCtor = (Intl as { Segmenter?: new (locale: undefined, opts: { granularity: string }) => { segment(s: string): Iterable<{ index: number; segment: string }> } }).Segmenter;
+  const SegmenterCtor = (
+    Intl as {
+      Segmenter?: new (
+        locale: undefined,
+        opts: { granularity: string },
+      ) => { segment(s: string): Iterable<{ index: number; segment: string }> };
+    }
+  ).Segmenter;
   if (SegmenterCtor) {
     for (const { index, segment } of new SegmenterCtor(undefined, { granularity: "grapheme" }).segment(text))
       bounds.push(index + segment.length);
@@ -43,6 +54,14 @@ function graphemeBoundaries(text: string): number[] {
     for (let i = 0; i < text.length; i++) bounds.push(i + 1);
   }
   return bounds;
+}
+
+/** ProseMirror's DOMObserver isn't part of the public API surface, but
+ *  `suppressSelectionUpdates` is the documented escape hatch (also used
+ *  internally by prosemirror-view itself) for telling it to ignore the next
+ *  native `selectionchange` rather than syncing the model to it. */
+function suppressNextSelectionChange(view: EditorView): void {
+  (view as unknown as { domObserver: { suppressSelectionUpdates(): void } }).domObserver?.suppressSelectionUpdates();
 }
 
 export const rtlArrowKeys = $prose(() =>
@@ -54,7 +73,7 @@ export const rtlArrowKeys = $prose(() =>
         update(view) {
           const pos = view.state.selection.$head.pos;
           if (pos !== last) {
-            console.log("[rtl-arrow] selection now at", pos, "(was", last, ")", new Error().stack?.split("\n").slice(1, 5).join(" | "));
+            console.log("[rtl-arrow] selection now at", pos, "(was", last, ")");
             last = pos;
           }
         },
@@ -78,29 +97,16 @@ export const rtlArrowKeys = $prose(() =>
         const { $head } = selection;
         const bounds = graphemeBoundaries($head.parent.textContent);
         const at = bounds.indexOf($head.parentOffset);
-        if (at === -1) {
-          console.log("[rtl-arrow] bail: offset", $head.parentOffset, "not in bounds", bounds);
-          return false;
-        }
+        if (at === -1) return false; // offset doesn't line up (e.g. an atom elsewhere in the block)
 
         const target = at + logicalDir;
-        if (target < 0 || target >= bounds.length) {
-          console.log("[rtl-arrow] bail: would leave block, at", at, "of", bounds.length);
-          return false;
-        }
+        if (target < 0 || target >= bounds.length) return false; // would leave the block
 
         const newPos = $head.start() + bounds[target];
         event.preventDefault();
+        suppressNextSelectionChange(view);
         view.dispatch(
           view.state.tr.setSelection(TextSelection.create(view.state.doc, newPos)).scrollIntoView(),
-        );
-        console.log(
-          "[rtl-arrow] moved",
-          $head.pos,
-          "->",
-          newPos,
-          "actual post-dispatch pos:",
-          view.state.selection.$head.pos,
         );
         return true;
       },
