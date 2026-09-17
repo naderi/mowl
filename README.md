@@ -175,8 +175,14 @@ screen).
 
 Grab the latest build from the [Releases](../../releases) page.
 
-- **Windows (x64)** — available now: portable `Mowl.exe` (\~7 MB, no install) or
-  the NSIS installer
+- **Windows (x64)** — available now: portable `Mowl.exe` (\~7 MB, no install),
+  the NSIS installer, or via [Scoop](https://scoop.sh):
+
+  ```powershell
+  scoop bucket add naderi https://github.com/naderi/scoop-bucket
+  scoop install naderi/mowl
+  ```
+
 - **macOS** (x64 + arm64) and **Linux** (x64 + arm64 AppImage) — *coming soon.*
   The cross‑platform release pipeline is in place
   ([`.github/workflows/release.yml`](.github/workflows/release.yml)); these builds
