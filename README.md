@@ -287,7 +287,7 @@ cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
 **Cutting a release:** bump `version` in `package.json`,
 `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`, push a `v*` tag, then
 run [`.github/workflows/release.yml`](.github/workflows/release.yml) manually
-(Actions tab or `gh workflow run release.yml --ref v1.7.0`) — it builds
+(Actions tab or `gh workflow run release.yml --ref v1.7.1`) — it builds
 Windows / macOS / Linux (x64 + arm64) and opens a draft GitHub release with
 checksums.
 
