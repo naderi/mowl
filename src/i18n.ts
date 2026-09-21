@@ -29,6 +29,8 @@ const EN = {
 
   "menu.new": "New",
   "menu.open": "Open…",
+  "menu.exportHtml": "As HTML…",
+  "menu.exportPdf": "As PDF…",
 
   "about.tagline": "Portable WYSIWYG Markdown editor",
   "about.credit": "by Ali Naderi · MIT License",
@@ -77,8 +79,6 @@ const EN = {
   "dialog.discardChanges": "Discard unsaved changes to {name}?",
   "dialog.unsavedQuit": "You have unsaved changes. Quit without saving?",
   "dialog.htmlExported": "HTML exported.",
-  "dialog.chooseExport": "Export as HTML file?  (No = print / save as PDF)",
-  "dialog.exportTitle": "Export",
   "dialog.startupFailed": "Startup failed: {err}",
   "dialog.readonlyHint": "Program folder is read-only — settings saved to {path}",
 
@@ -190,6 +190,8 @@ const DE: Partial<Record<I18nKey, string>> = {
 
   "menu.new": "Neu",
   "menu.open": "Öffnen…",
+  "menu.exportHtml": "Als HTML…",
+  "menu.exportPdf": "Als PDF…",
 
   "about.tagline": "Portabler WYSIWYG-Markdown-Editor",
   "about.credit": "von Ali Naderi · MIT-Lizenz",
@@ -238,8 +240,6 @@ const DE: Partial<Record<I18nKey, string>> = {
   "dialog.discardChanges": "Ungespeicherte Änderungen an {name} verwerfen?",
   "dialog.unsavedQuit": "Es gibt ungespeicherte Änderungen. Ohne Speichern beenden?",
   "dialog.htmlExported": "HTML exportiert.",
-  "dialog.chooseExport": "Als HTML-Datei exportieren?  (Nein = drucken / als PDF speichern)",
-  "dialog.exportTitle": "Exportieren",
   "dialog.startupFailed": "Start fehlgeschlagen: {err}",
   "dialog.readonlyHint": "Programmordner ist schreibgeschützt — Einstellungen gespeichert unter {path}",
 

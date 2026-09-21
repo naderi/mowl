@@ -22,7 +22,7 @@
           <button id="btn-save" data-i18n-title="toolbar.save.title" data-i18n-aria="toolbar.save.aria" title="Save (Ctrl/Cmd+S)" aria-label="Save">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
           </button>
-          <button id="btn-export" data-i18n-title="toolbar.export.title" data-i18n-aria="toolbar.export.aria" title="Export HTML / PDF" aria-label="Export">
+          <button id="btn-export" data-i18n-title="toolbar.export.title" data-i18n-aria="toolbar.export.aria" title="Export HTML / PDF" aria-label="Export" aria-haspopup="menu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"/><path d="M13 12h8"/><path d="m18 7 5 5-5 5"/></svg>
           </button>
           <button id="btn-source" data-i18n-title="toolbar.source.title" data-i18n-aria="toolbar.source.aria" title="Toggle source view" aria-label="Toggle source view">
@@ -51,6 +51,10 @@
       <div id="open-menu" role="menu" hidden>
         <button type="button" role="menuitem" data-act="new" data-i18n="menu.new">New</button>
         <button type="button" role="menuitem" data-act="open" data-i18n="menu.open">Open…</button>
+      </div>
+      <div id="export-menu" role="menu" hidden>
+        <button type="button" role="menuitem" data-act="html" data-i18n="menu.exportHtml">As HTML…</button>
+        <button type="button" role="menuitem" data-act="pdf" data-i18n="menu.exportPdf">As PDF…</button>
       </div>
       <div id="about" hidden>
         <div class="about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">

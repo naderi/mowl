@@ -594,14 +594,6 @@ async function exportPdf(): Promise<void> {
   document.body.appendChild(frame);
 }
 
-async function chooseExport(): Promise<void> {
-  const asHtml = await ask(t("dialog.chooseExport"), {
-    title: t("dialog.exportTitle"),
-  });
-  if (asHtml) await exportHtml();
-  else await exportPdf();
-}
-
 // --- source view --------------------------------------------------------
 
 const ICON_TO_SOURCE =
@@ -828,41 +820,67 @@ function wireAbout(): void {
   });
 }
 
-// --- open menu (New / Open) -------------------------------------------
+// --- toolbar popup menus (New / Open, Export) ---------------------------
 
 const openMenuEl = document.getElementById("open-menu") as HTMLElement;
+const exportMenuEl = document.getElementById("export-menu") as HTMLElement;
+const popupMenus = [openMenuEl, exportMenuEl];
 
-function closeOpenMenu(): void {
-  openMenuEl.hidden = true;
+function closePopupMenus(): void {
+  for (const el of popupMenus) el.hidden = true;
 }
 
-function wireOpenMenu(): void {
-  const btn = document.getElementById("btn-open");
+function popupMenuOpen(): boolean {
+  return popupMenus.some((el) => !el.hidden);
+}
+
+/** Show `menu` under the toolbar button `btnId`, closing any other menu. */
+function showPopupMenu(menu: HTMLElement, btnId: string): void {
+  const btn = document.getElementById(btnId);
   if (!btn) return;
-  btn.addEventListener("click", (e) => {
+  closePopupMenus();
+  const r = btn.getBoundingClientRect();
+  menu.hidden = false;
+  const left = Math.min(r.left, window.innerWidth - menu.offsetWidth - 8);
+  menu.style.left = `${Math.max(8, Math.round(left))}px`;
+  menu.style.top = `${Math.round(r.bottom + 4)}px`;
+}
+
+function wirePopupMenu(
+  btnId: string,
+  menu: HTMLElement,
+  onAct: (act: string | undefined) => void,
+): void {
+  document.getElementById(btnId)?.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (!openMenuEl.hidden) {
-      closeOpenMenu();
-      return;
-    }
-    const r = btn.getBoundingClientRect();
-    openMenuEl.style.left = `${Math.round(r.left)}px`;
-    openMenuEl.style.top = `${Math.round(r.bottom + 4)}px`;
-    openMenuEl.hidden = false;
+    if (!menu.hidden) closePopupMenus();
+    else showPopupMenu(menu, btnId);
   });
-  openMenuEl.addEventListener("click", (e) => {
+  menu.addEventListener("click", (e) => {
     const act = (e.target as HTMLElement).closest<HTMLElement>("button[data-act]")
       ?.dataset.act;
-    closeOpenMenu();
+    closePopupMenus();
+    onAct(act);
+  });
+}
+
+function wirePopupMenus(): void {
+  wirePopupMenu("btn-open", openMenuEl, (act) => {
     if (act === "new") newTab();
     else if (act === "open") void openDialog();
   });
-  document.addEventListener("pointerdown", (e) => {
-    if (openMenuEl.hidden) return;
-    const t = e.target as HTMLElement;
-    if (!openMenuEl.contains(t) && !t.closest("#btn-open")) closeOpenMenu();
+  wirePopupMenu("btn-export", exportMenuEl, (act) => {
+    if (act === "html") void exportHtml();
+    else if (act === "pdf") void exportPdf();
   });
-  window.addEventListener("resize", closeOpenMenu);
+  document.addEventListener("pointerdown", (e) => {
+    if (!popupMenuOpen()) return;
+    const t = e.target as HTMLElement;
+    if (!popupMenus.some((m) => m.contains(t)) && !t.closest("#btn-open, #btn-export")) {
+      closePopupMenus();
+    }
+  });
+  window.addEventListener("resize", closePopupMenus);
 }
 
 // --- wiring --------------------------------------------------------------
@@ -873,7 +891,7 @@ const SHORTCUT_HANDLERS: Record<ShortcutAction, () => void> = {
   save: () => void saveDoc(),
   save_as: () => void saveAs(),
   close_tab: () => void closeActiveTab(),
-  export: () => void chooseExport(),
+  export: () => showPopupMenu(exportMenuEl, "btn-export"),
   toggle_source: () => toggleSource(),
   find: () => openFind(false),
   replace: () => openFind(true),
@@ -904,9 +922,9 @@ function wireShortcuts(): void {
           emojiPicker.close();
           return;
         }
-        if (!openMenuEl.hidden) {
+        if (popupMenuOpen()) {
           e.preventDefault();
-          closeOpenMenu();
+          closePopupMenus();
           return;
         }
         if (!aboutEl.hidden) {
@@ -953,9 +971,8 @@ function wireShortcuts(): void {
 }
 
 function wireButtons(): void {
-  // #btn-open opens a small New / Open menu — see wireOpenMenu().
+  // #btn-open and #btn-export open small popup menus — see wirePopupMenus().
   document.getElementById("btn-save")?.addEventListener("click", () => void saveDoc());
-  document.getElementById("btn-export")?.addEventListener("click", () => void chooseExport());
   document.getElementById("btn-source")?.addEventListener("click", () => toggleSource());
   document.getElementById("btn-ltr")?.addEventListener("click", () => setDirection("ltr"));
   document.getElementById("btn-rtl")?.addEventListener("click", () => setDirection("rtl"));
@@ -1235,7 +1252,7 @@ async function bootstrap(): Promise<void> {
 
   wireButtons();
   wireAbout();
-  wireOpenMenu();
+  wirePopupMenus();
   updateShortcutTitles();
   updateThemeButton();
   wireShortcuts();

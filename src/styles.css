@@ -376,7 +376,7 @@ body.mowl-file-drag::after {
 }
 
 /* --- find / replace bar --- */
-#tabs[hidden], #find-bar[hidden], #about[hidden], #open-menu[hidden],
+#tabs[hidden], #find-bar[hidden], #about[hidden], #open-menu[hidden], #export-menu[hidden],
 #emoji-picker[hidden], #settings-panel[hidden] { display: none; }
 
 /* --- settings panel (flips in over the editor) --- */
@@ -601,8 +601,8 @@ body.mowl-file-drag::after {
   font-size: 13px;
 }
 
-/* --- open menu (New / Open) --- */
-#open-menu {
+/* --- toolbar popup menus (New / Open, Export) --- */
+#open-menu, #export-menu {
   position: fixed;
   z-index: 60;
   min-width: 140px;
@@ -614,7 +614,7 @@ body.mowl-file-drag::after {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
   font-size: 13px;
 }
-#open-menu button {
+#open-menu button, #export-menu button {
   display: block;
   width: 100%;
   text-align: left;
@@ -626,7 +626,7 @@ body.mowl-file-drag::after {
   font: inherit;
   cursor: pointer;
 }
-#open-menu button:hover { background: var(--hover); }
+#open-menu button:hover, #export-menu button:hover { background: var(--hover); }
 #find-bar {
   flex: none;
   display: flex;
