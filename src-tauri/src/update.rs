@@ -494,7 +494,7 @@ mod imp {
         fn compares_versions_semantically() {
             let v = |s: &str| parse_version(s).unwrap();
             assert!(v("v1.10.0") > v("1.9.9"));
-            assert!(v("1.7.0") > current_version());
+            assert!(v("99.0.0") > current_version());
             assert!(parse_version("nightly").is_err());
         }
 
