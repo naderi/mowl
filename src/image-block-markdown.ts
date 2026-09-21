@@ -16,6 +16,8 @@
 //   * serialize — `![caption](src)`, nothing else. The in-editor resize ratio
 //                is intentionally not persisted: standard Markdown has nowhere
 //                to put it, and keeping it there is what caused the bug.
+//                (Scale and alignment chosen in the image toolbar are saved
+//                as an HTML <img> instead — see image-toolbar.ts.)
 //
 // Applied by mutating the live schema spec after `crepe.create()` — the
 // transformer reads `spec.parseMarkdown` / `spec.toMarkdown` fresh on every

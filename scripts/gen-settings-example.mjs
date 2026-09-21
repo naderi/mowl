@@ -35,11 +35,33 @@ editor_font_size = 16       # base editor size in px (headings scale from this)
 source_font = ""            # Markdown source-view font ("" = built-in monospace)
 source_font_size = 15       # source-view size in px
 accent = ""                 # accent colour, e.g. "#0969da" ("" = default)
+auto_check_updates = true    # look for a newer release at startup, at most once a day (Windows)
+
+# --- keyboard shortcuts (safe to hand-edit) ---
+# Also editable in the settings screen: click a field, then press the new keys.
+# Format: optional Mod / Alt / Shift, then one key — "Mod+Shift+S". Mod is Ctrl
+# (or Cmd on macOS). A shortcut needs Mod or Alt (or be an F-key); Ctrl+0..7,
+# Ctrl+K and the clipboard/undo keys are fixed. Invalid entries fall back to the
+# default.
+
+[shortcuts]
+new_tab = "Mod+N"
+open = "Mod+O"
+save = "Mod+S"
+save_as = "Mod+Shift+S"
+close_tab = "Mod+W"
+export = "Mod+E"
+toggle_source = "Mod+Shift+C"
+find = "Mod+F"
+replace = "Mod+H"
+emoji = "Mod+."
+settings = "Mod+,"
 
 # --- written and managed by Mowl — no need to touch these ---
 # open_files = []            # files to reopen on next launch (session restore)
 # open_dirs = []             # "ltr"/"rtl" per open_files entry (per-file direction)
 # active_tab = 0             # index into open_files of the active tab
+# last_update_check = 0       # when the update check last ran (Unix seconds)
 # [window]                   # width / height / x / y / maximized
 `;
 

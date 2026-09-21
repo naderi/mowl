@@ -4,6 +4,8 @@ use serde::Serialize;
 use tauri::State;
 
 use crate::settings::Settings;
+use crate::shell_integration::{self, OpenWithStatus};
+use crate::update::{self, PreparedUpdate, UpdateInfo};
 use crate::{assets, export, file_arg, mdfmt, AppState};
 
 #[derive(Serialize)]
@@ -86,4 +88,53 @@ pub fn render_html(
 #[tauri::command]
 pub fn read_image_data_url(doc_path: Option<String>, src: String) -> Result<String, String> {
     assets::to_data_url(doc_path.as_deref(), &src)
+}
+
+/// Whether Mowl is in the system "Open with" list for Markdown files (Windows).
+#[tauri::command]
+pub fn open_with_status() -> OpenWithStatus {
+    shell_integration::status()
+}
+
+#[tauri::command]
+pub fn register_open_with() -> Result<OpenWithStatus, String> {
+    shell_integration::register().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn unregister_open_with() -> Result<OpenWithStatus, String> {
+    shell_integration::unregister().map_err(|e| e.to_string())
+}
+
+/// Whether this build can update itself (Windows only for now).
+#[tauri::command]
+pub fn update_supported() -> bool {
+    update::supported()
+}
+
+#[tauri::command]
+pub async fn check_for_update() -> Result<UpdateInfo, String> {
+    tauri::async_runtime::spawn_blocking(update::check)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Download `version` and keep it only if its signature verifies. Progress is
+/// reported through the `update-progress` event.
+#[tauri::command]
+pub async fn download_update(
+    app: tauri::AppHandle,
+    version: String,
+) -> Result<PreparedUpdate, String> {
+    tauri::async_runtime::spawn_blocking(move || update::prepare(&app, &version))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Apply a downloaded update and exit; the new version starts on its own.
+#[tauri::command]
+pub fn install_update(app: tauri::AppHandle, version: String) -> Result<(), String> {
+    update::install(&version)?;
+    app.exit(0);
+    Ok(())
 }

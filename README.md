@@ -1,6 +1,10 @@
-![Mowl](docs/logo.png)
+<div align="center">
+
+<img src="docs/logo.png" alt="Mowl">
 
 **English** · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
+
+</div>
 
 # Mowl
 
@@ -121,10 +125,34 @@ Plus the rest of GFM: task lists, footnotes, strikethrough, autolinks.
 Light and dark themes that follow the OS by default, with a manual toggle. Editor
 font, font size, source‑view font, and accent colour are all configurable.
 
+### 🧩 Raw HTML, rendered
+
+Markdown files from GitHub are full of small HTML snippets. Mowl shows the common
+ones as what they are instead of as literal tags: `<img>` (including local
+paths, `width`/`align`, and images wrapped in `<div align="center">`, `<p>` or
+`<a>`), `<kbd>`, links written as `<a href>`, collapsible `<details>` /
+`<summary>` sections (click the summary to fold), `<div align="…">` blocks, and
+`<!--more-->` markers. It is display only — your Markdown is saved exactly as
+you wrote it, and everything else stays literal text.
+
+Click an image and a small toolbar appears: align it left, centre or right,
+scale it to 25 / 50 / 75 / 100 % of its original size, or remove it. An
+untouched image stays plain Markdown (`![alt](pic.png)`); once you scale or align
+it, it is saved as `<img src alt width align>`, which GitHub and most other
+renderers understand — and set back to defaults it becomes plain Markdown again.
+
 ### 🗂️ File associations
 
 Set Mowl as the default app for `.md` / `.markdown` files (via the installer).
 Double‑click a Markdown file and it opens in a new tab of the running window.
+You can also drag one or more `.md` / `.markdown` / `.mdx` / `.txt` files onto the
+window to open them.
+
+Using the portable `Mowl.exe` on Windows? The settings screen has a **System**
+section with a *Register* button that adds Mowl to the "Open with" menu of
+Markdown files — per user, no admin rights, and fully removable again. (Windows
+never lets a program make itself the default; choose *Always* once in the "Open
+with" dialog.) If you move the exe, Mowl repairs the registration on next start.
 
 ### ⚙️ Settings, GUI or file
 
@@ -135,6 +163,20 @@ commented `settings.toml` next to the executable in any text editor — Mowl
 **picks up the change within a second, no restart**. If the program folder is
 read‑only, Mowl falls back to the OS config directory and tells you so in the
 window. Every release also ships a fully commented `settings.example.toml`.
+
+### 🔄 Updates
+
+On Windows, Mowl can update itself. **About → Check for updates** looks at the
+latest GitHub release; if there is a newer one you can download it, and Mowl
+verifies its signature against a key built into the app before it installs
+anything. The portable `Mowl.exe` is replaced in place and restarted (the previous
+version stays next to it as `Mowl.exe.old` until the next start), installer builds
+run the new installer, and Scoop installs are pointed at `scoop update mowl`. Once a
+day at startup Mowl checks quietly and puts a dot on the About button if something
+is new. This is the only time Mowl talks to the internet by itself — switch it off
+with **Settings → System → Check for updates automatically** or
+`auto_check_updates = false`. **Settings → System** also has a
+*Check now* button.
 
 ### 🌍 English and Deutsch
 
@@ -170,6 +212,11 @@ screen).
 | Block: Text / H1–H3 / lists / quote / code | `Ctrl/Cmd+0`–`7` |
 | Insert emoji                 | `Ctrl/Cmd+.`       |
 | Settings                     | `Ctrl/Cmd+,`       |
+
+These are the defaults. The application shortcuts (everything except the
+clipboard, link and block-type keys) can be changed in the settings screen —
+click a field and press the new combination — or under `[shortcuts]` in
+`settings.toml`.
 
 ## Download
 

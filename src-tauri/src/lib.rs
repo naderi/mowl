@@ -4,6 +4,8 @@ mod export;
 mod mdfmt;
 mod portable;
 mod settings;
+mod shell_integration;
+mod update;
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -79,6 +81,8 @@ pub fn run() {
             std::thread::spawn(move || {
                 settings::watch(settings_path, watcher_last_write, handle)
             });
+            std::thread::spawn(shell_integration::repair_stale);
+            std::thread::spawn(update::cleanup_old);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -88,6 +92,13 @@ pub fn run() {
             commands::write_document,
             commands::render_html,
             commands::read_image_data_url,
+            commands::open_with_status,
+            commands::register_open_with,
+            commands::unregister_open_with,
+            commands::update_supported,
+            commands::check_for_update,
+            commands::download_update,
+            commands::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

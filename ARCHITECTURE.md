@@ -267,9 +267,47 @@ Toolchain: Rust stable (MSVC on Windows) + VS Build Tools + Windows SDK; Node 20
 `pnpm`. WebView2 ships with Windows 10/11. See
 <https://tauri.app/start/prerequisites/>.
 
-**Release via CI:** push a `v*` tag → `.github/workflows/release.yml` builds all
-five targets and opens a draft GitHub release. Bump `version` in **both**
-`package.json` and `src-tauri/tauri.conf.json` first.
+**Release via CI:** run `.github/workflows/release.yml` by hand (Actions tab, or
+`gh workflow run release.yml --ref vX.Y.Z`) — it is `workflow_dispatch`-only on
+purpose. It builds all five targets and opens a draft GitHub release. Bump
+`version` in **both** `package.json` and `src-tauri/tauri.conf.json` first.
+
+### Releases and updates
+
+Windows builds can update themselves (`src-tauri/src/update.rs`, UI in
+`src/update.ts` and the About panel). The flow: ask the GitHub API for the latest
+**published** release (drafts are invisible to it) → download the asset that
+matches this install → verify its minisign signature against `src-tauri/updater.pub`
+→ swap it in.
+
+| Install             | Asset it downloads                | How it is applied                             |
+| ------------------- | --------------------------------- | --------------------------------------------- |
+| portable `Mowl.exe` | `Mowl.exe` (x64) + `Mowl.exe.sig` | running exe renamed to `.old`, new one takes its place, restarted |
+| NSIS (has `uninstall.exe`) | `Mowl_<v>_<x64|arm64>-setup.exe` + `.sig` | setup is launched, Mowl exits |
+| Scoop / MSI / dev build | —                             | only reported (scoop: “scoop update mowl”)    |
+
+**What a release needs for this to work**
+
+1. Publish the draft — updates only see published releases.
+2. Every downloadable asset needs its `<asset>.sig`. The CI signs the NSIS
+   installers (step *Sign installers for the updater*). The portable `Mowl.exe`
+   is uploaded by hand, so sign it yourself and upload the `.sig` beside it:
+   `pnpm sign-release path/to/Mowl.exe` (wraps `tauri signer sign` with the key
+   from `~/.tauri/mowl-updater.key`)
+3. Without a `.sig` the app still reports the new version but only offers the
+   release page.
+
+**Keys.** `src-tauri/updater.pub` (committed) is the public half. The private
+key lives outside the repo (`~/.tauri/mowl-updater.key`) and as the GitHub
+secrets `TAURI_SIGNING_PRIVATE_KEY` (the key file’s content) and, if the key has
+a password, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Lose the private key and
+installed copies can never verify another update — ship a new public key in a
+normal release first. Create a pair with `pnpm tauri signer generate`.
+
+**Testing without GitHub.** Debug builds honour `MOWL_UPDATE_API`: a URL that
+returns a GitHub-style `releases/latest` JSON (`tag_name`, `html_url`, `body`,
+`assets[{name, browser_download_url, size}]`). `cargo test` covers signature
+checking, install-type detection and the file swap.
 
 `pnpm` note: build scripts (esbuild) are gated — `pnpm-workspace.yaml` has the
 `allowBuilds` / `onlyBuiltDependencies` entries that permit it.

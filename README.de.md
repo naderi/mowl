@@ -1,6 +1,10 @@
-![Mowl](docs/logo.png)
+<div align="center">
+
+<img src="docs/logo.png" alt="Mowl">
 
 [English](README.md) · **Deutsch** · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
+
+</div>
 
 > ℹ️ Diese Übersetzung wurde maschinell erstellt. Maßgeblich ist das englische
 > [README](README.md).
@@ -132,11 +136,38 @@ Helles und dunkles Theme, folgt standardmäßig dem Betriebssystem, mit manuelle
 Umschalter. Editor‑Schrift, Schriftgröße, Quelltext‑Schrift und Akzentfarbe sind
 konfigurierbar.
 
+### 🧩 Rohes HTML, dargestellt
+
+Markdown‑Dateien von GitHub sind voller kleiner HTML‑Schnipsel. Mowl zeigt die
+gängigen als das, was sie sind, statt als Text‑Tags: `<img>` (auch mit lokalen
+Pfaden, `width`/`align` und in `<div align="center">`, `<p>` oder `<a>`
+eingepackt), `<kbd>`, als `<a href>` geschriebene Links, einklappbare
+`<details>`‑/`<summary>`‑Abschnitte (Zusammenfassung anklicken), `<div
+align="…">`‑Blöcke und `<!--more-->`‑Marker. Das ist nur die Anzeige — dein
+Markdown wird exakt so gespeichert, wie du es geschrieben hast, und alles
+andere bleibt Text.
+
+Ein Klick auf ein Bild zeigt eine kleine Toolbar: links, zentriert oder rechts
+ausrichten, auf 25 / 50 / 75 / 100 % der Originalgröße skalieren oder entfernen.
+Ein unverändertes Bild bleibt normales Markdown (`![alt](pic.png)`); sobald du es
+skalierst oder ausrichtest, wird es als `<img src alt width align>` gespeichert,
+was GitHub und die meisten anderen Renderer verstehen — und auf Standard
+zurückgesetzt wird es wieder zu normalem Markdown.
+
 ### 🗂️ Dateizuordnungen
 
 Mowl als Standard‑App für `.md`‑/`.markdown`‑Dateien festlegen (über den
 Installer). Ein Doppelklick auf eine Markdown‑Datei öffnet sie in einem neuen Tab
 des laufenden Fensters.
+Du kannst auch eine oder mehrere `.md`‑/`.markdown`‑/`.mdx`‑/`.txt`‑Dateien auf das
+Fenster ziehen, um sie zu öffnen.
+
+Die portable `Mowl.exe` unter Windows? Die Einstellungsseite hat einen Abschnitt
+**System** mit einem Knopf *Registrieren*, der Mowl im Menü „Öffnen mit" für
+Markdown‑Dateien anbietet — pro Benutzer, ohne Adminrechte und jederzeit wieder
+entfernbar. (Windows erlaubt es Programmen nicht, sich selbst zum Standard zu
+machen; einmal im „Öffnen mit"‑Dialog *Immer* wählen.) Wird die Exe verschoben,
+repariert Mowl die Registrierung beim nächsten Start.
 
 ### ⚙️ Einstellungen, per GUI oder Datei
 
@@ -149,6 +180,21 @@ innerhalb einer Sekunde, ohne Neustart**. Ist der Programmordner schreibgeschüt
 weicht Mowl auf das Konfigurationsverzeichnis des Betriebssystems aus und weist im
 Fenster darauf hin. Jede Veröffentlichung bringt außerdem eine vollständig
 kommentierte `settings.example.toml` mit.
+
+### 🔄 Updates
+
+Unter Windows kann Mowl sich selbst aktualisieren. **Über → Nach Updates suchen**
+prüft das neueste GitHub‑Release; gibt es ein neueres, lässt es sich herunterladen,
+und Mowl prüft die Signatur gegen einen in die App eingebauten Schlüssel, bevor
+irgendetwas installiert wird. Die portable `Mowl.exe` wird an Ort und Stelle
+ersetzt und neu gestartet (die vorige Version bleibt bis zum nächsten Start als
+`Mowl.exe.old` daneben liegen), Installer‑Builds starten den neuen Installer, und
+Scoop‑Installationen bekommen den Hinweis `scoop update mowl`. Einmal täglich prüft
+Mowl beim Start still im Hintergrund und setzt einen Punkt auf den Über‑Knopf, wenn
+es etwas Neues gibt. Das ist der einzige Moment, in dem Mowl von sich aus ins
+Internet geht — abschaltbar unter **Einstellungen → System → Automatisch nach
+Updates suchen** oder mit `auto_check_updates = false`. Unter **Einstellungen → System** gibt es
+außerdem den Knopf *Jetzt prüfen*.
 
 ### 🌍 English und Deutsch
 
@@ -184,6 +230,11 @@ Einstellungen).
 | Block: Text / Ü1–Ü3 / Listen / Zitat / Code | `Strg/Cmd+0`–`7` |
 | Emoji einfügen                   | `Strg/Cmd+.`       |
 | Einstellungen                    | `Strg/Cmd+,`       |
+
+Das sind die Standardwerte. Die Anwendungs‑Kürzel (alles außer Zwischenablage,
+Link und Block‑Typen) lassen sich auf der Einstellungsseite ändern — Feld
+anklicken und die neue Kombination drücken — oder unter `[shortcuts]` in der
+`settings.toml`.
 
 ## Download
 

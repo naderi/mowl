@@ -40,6 +40,42 @@ impl Default for WindowState {
     }
 }
 
+/// Keyboard shortcuts, e.g. "Mod+Shift+S" (`Mod` = Ctrl or Cmd). The frontend
+/// validates and normalises these; here they are just strings.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ShortcutSettings {
+    pub new_tab: String,
+    pub open: String,
+    pub save: String,
+    pub save_as: String,
+    pub close_tab: String,
+    pub export: String,
+    pub toggle_source: String,
+    pub find: String,
+    pub replace: String,
+    pub emoji: String,
+    pub settings: String,
+}
+
+impl Default for ShortcutSettings {
+    fn default() -> Self {
+        Self {
+            new_tab: "Mod+N".to_string(),
+            open: "Mod+O".to_string(),
+            save: "Mod+S".to_string(),
+            save_as: "Mod+Shift+S".to_string(),
+            close_tab: "Mod+W".to_string(),
+            export: "Mod+E".to_string(),
+            toggle_source: "Mod+Shift+C".to_string(),
+            find: "Mod+F".to_string(),
+            replace: "Mod+H".to_string(),
+            emoji: "Mod+.".to_string(),
+            settings: "Mod+,".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
@@ -70,6 +106,8 @@ pub struct Settings {
     pub source_font_size: u16,
     /// Accent colour ("" = default), e.g. "#0969da".
     pub accent: String,
+    /// Check GitHub for a newer release at startup (at most once a day).
+    pub auto_check_updates: bool,
 
     // --- app-managed state ---
     /// Files to reopen on next launch (session restore).
@@ -79,6 +117,10 @@ pub struct Settings {
     pub open_dirs: Vec<String>,
     /// Index into `open_files` of the tab that was active.
     pub active_tab: usize,
+    /// When the last update check ran (Unix seconds); throttles the startup check.
+    pub last_update_check: u64,
+    /// User-configurable shortcuts (a `[shortcuts]` table; hand-editable).
+    pub shortcuts: ShortcutSettings,
     pub window: WindowState,
 }
 
@@ -99,9 +141,12 @@ impl Default for Settings {
             source_font: String::new(),
             source_font_size: 15,
             accent: String::new(),
+            auto_check_updates: true,
             open_files: Vec::new(),
             open_dirs: Vec::new(),
             active_tab: 0,
+            last_update_check: 0,
+            shortcuts: ShortcutSettings::default(),
             window: WindowState::default(),
         }
     }
@@ -184,5 +229,36 @@ pub fn watch(path: PathBuf, last_write: LastWrite, app: AppHandle) {
                 let _ = app.emit(SETTINGS_CHANGED_EVENT, settings);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn settings_round_trip_through_toml() {
+        let mut s = Settings::default();
+        s.shortcuts.save = "Mod+Alt+S".to_string();
+        let raw = toml::to_string_pretty(&s).unwrap();
+        let back: Settings = toml::from_str(&raw).unwrap();
+        assert_eq!(back.shortcuts.save, "Mod+Alt+S");
+        assert_eq!(back.shortcuts.toggle_source, "Mod+Shift+C");
+    }
+
+    #[test]
+    fn partial_shortcuts_table_keeps_other_defaults() {
+        let s: Settings = toml::from_str("[shortcuts]
+find = \"Mod+G\"
+").unwrap();
+        assert_eq!(s.shortcuts.find, "Mod+G");
+        assert_eq!(s.shortcuts.replace, "Mod+H");
+    }
+
+    #[test]
+    fn settings_without_shortcuts_table_still_load() {
+        let s: Settings = toml::from_str("theme = \"dark\"
+").unwrap();
+        assert_eq!(s.shortcuts.open, "Mod+O");
     }
 }

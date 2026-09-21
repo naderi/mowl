@@ -24,6 +24,14 @@ toml = "0.8"
 comrak = "0.54"
 anyhow = "1"
 
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+# self-update (update.rs); Schannel via native-tls keeps the exe small
+ureq = { version = "3", default-features = false, features = ["native-tls", "json"] }
+semver = "1"
+base64 = "0.22"
+minisign-verify = "0.2"
+
 [profile.release]
 codegen-units = 1
 lto = true

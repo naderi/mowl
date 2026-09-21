@@ -273,6 +273,108 @@ body {
 }
 #editor .milkdown .ProseMirror { font-size: var(--editor-font-size); }
 
+/* Raw HTML rendered as real content (see html-markdown.ts). Anything not
+   listed there stays literal text. */
+#editor .milkdown [data-mowl-html="more"],
+#editor .milkdown [data-mowl-html="details-open"],
+#editor .milkdown [data-mowl-html="details-close"],
+#editor .milkdown [data-mowl-html="div-open"],
+#editor .milkdown [data-mowl-html="div-close"],
+#editor .milkdown [data-mowl-html="kbd-open"],
+#editor .milkdown [data-mowl-html="kbd-close"],
+#editor .milkdown [data-mowl-html="a-open"],
+#editor .milkdown [data-mowl-html="a-close"],
+#editor .milkdown .mowl-html-hidden,
+#editor .milkdown .mowl-details-collapsed { display: none !important; }
+#editor .milkdown .mowl-html-align-left { text-align: left; }
+#editor .milkdown .mowl-html-align-center { text-align: center; }
+#editor .milkdown .mowl-html-align-right { text-align: right; }
+/* Image toolbar (image-toolbar.ts): floats over the selected image. */
+/* Drop hint while Markdown files are dragged over the window. */
+body.mowl-file-drag::after {
+  content: "";
+  position: fixed;
+  inset: 8px;
+  z-index: 200;
+  pointer-events: none;
+  border: 2px dashed var(--accent, #4a7dff);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent, #4a7dff) 6%, transparent);
+}
+
+.mowl-image-toolbar {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+}
+.mowl-image-toolbar[hidden] { display: none; }
+.mowl-image-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--bar-fg);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.mowl-image-btn svg { width: 16px; height: 16px; }
+.mowl-image-btn:hover { background: var(--hover); color: var(--fg); }
+.mowl-image-btn.active {
+  background: color-mix(in srgb, var(--accent, #4a7dff) 16%, transparent);
+  color: var(--fg);
+}
+.mowl-image-divider { width: 1px; height: 18px; margin: 0 3px; background: var(--border); }
+#editor .milkdown .mowl-html-link {
+  color: var(--accent, #0969da);
+  text-decoration: underline;
+}
+#editor .milkdown .mowl-kbd {
+  display: inline-block;
+  min-width: 1.35em;
+  padding: 0.05em 0.4em;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--bar-bg);
+  font-size: 0.86em;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}
+/* <details>/<summary> is a decorated paragraph; clicking it folds the section. */
+#editor .milkdown .mowl-details-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+#editor .milkdown .mowl-details-summary:hover { background: var(--hover); }
+#editor .milkdown .mowl-details-summary::before { content: "\25BE"; } /* ▾ */
+#editor .milkdown .mowl-details-summary.mowl-details-collapsed-summary::before {
+  content: "\25B8"; /* ▸ */
+}
+#editor .milkdown .mowl-details-summary.mowl-details-collapsed-summary:dir(rtl)::before {
+  content: "\25C2"; /* ◂ */
+}
+
 /* --- find / replace bar --- */
 #tabs[hidden], #find-bar[hidden], #about[hidden], #open-menu[hidden],
 #emoji-picker[hidden], #settings-panel[hidden] { display: none; }
@@ -365,6 +467,50 @@ body {
 }
 .settings-row input[type="text"] { width: 180px; }
 .settings-row input[type="number"] { width: 72px; }
+.settings-check { display: flex; align-items: center; gap: 12px; flex: 1; cursor: pointer; }
+.settings-check input { width: 16px; height: 16px; flex: none; }
+.settings-row--update { flex-wrap: wrap; }
+/* the result of "Check now" sits on its own line under the option */
+.settings-update-status { order: 3; flex-basis: 100%; text-align: right; line-height: 1.35; }
+.settings-update-status:empty { display: none; }
+.settings-shortcut {
+  width: 180px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.settings-shortcut:hover { background: var(--hover); }
+.settings-action {
+  min-width: 88px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.settings-action:hover:not(:disabled) { background: var(--hover); }
+.settings-action:disabled { opacity: 0.5; cursor: default; }
+.settings-action:focus-visible { outline: none; border-color: var(--accent, #4a7dff); }
+.settings-shortcut:focus-visible,
+.settings-shortcut.listening { outline: none; border-color: var(--accent, #4a7dff); }
+.settings-shortcut.listening {
+  background: color-mix(in srgb, var(--accent, #4a7dff) 10%, var(--bg));
+}
+.settings-shortcut.conflict { border-color: #cf4500; color: #cf4500; }
 .settings-row select:focus,
 .settings-row input:focus { outline: none; border-color: var(--accent, #4a7dff); }
 .settings-color { display: flex; align-items: center; gap: 6px; }
@@ -574,6 +720,80 @@ body {
   justify-content: center;
   background: rgba(0, 0, 0, 0.4);
 }
+/* Update section of the About panel (update.ts). */
+#btn-about { position: relative; }
+#update-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent, #4a7dff);
+  box-shadow: 0 0 0 2px var(--bar-bg);
+}
+.about-update {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.about-update[hidden], .about-update-progress[hidden] { display: none !important; }
+.about-update-btn {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.about-update-btn:hover:not(:disabled) { background: var(--hover); }
+.about-update-btn:disabled { opacity: 0.55; cursor: default; }
+.about-update-primary {
+  border-color: color-mix(in srgb, var(--accent, #4a7dff) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent, #4a7dff) 10%, var(--bg));
+}
+.about-update-status { margin-top: 9px; font-size: 12px; line-height: 1.5; }
+.about-update-notes {
+  margin-top: 8px;
+  max-height: 104px;
+  overflow: auto;
+  padding: 8px 10px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 7px;
+  background: var(--hover);
+  color: var(--bar-fg);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.about-update-progress { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+.about-update-progress-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hover);
+}
+#about-update-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent, #4a7dff);
+  transition: width 120ms ease;
+}
+#about-update-progress-text {
+  min-width: 34px;
+  text-align: right;
+  color: var(--bar-fg);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.about-update-actions { margin-top: 10px; display: flex; justify-content: center; gap: 8px; }
+
 .about-card {
   position: relative;
   max-width: 320px;

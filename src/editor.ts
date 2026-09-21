@@ -21,6 +21,12 @@ import {
   type ListMarker,
 } from "./markdown-serializer";
 import { patchImageBlockMarkdown } from "./image-block-markdown";
+import { imageToolbarPlugin } from "./image-toolbar";
+import {
+  patchHtmlMarkdown,
+  rawHtmlPresentationPlugin,
+  resolveRawHtmlImages,
+} from "./html-markdown";
 import {
   findKey,
   findPlugin,
@@ -102,13 +108,19 @@ export class Editor {
       .config((ctx) => configureMarkdownSerializer(ctx, marker))
       .use(linkFromClipboard)
       .use(findPlugin)
+      .use(rawHtmlPresentationPlugin)
+      .use(imageToolbarPlugin)
       .use(emojiInputRule);
     crepe.on((listener) => {
-      listener.markdownUpdated(() => this.onChange());
+      listener.markdownUpdated(() => {
+        this.onChange();
+        this.resolveRawHtmlImages();
+      });
     });
     await crepe.create();
     this.crepe = crepe;
     patchImageBlockMarkdown(crepe);
+    patchHtmlMarkdown(crepe);
     this.blockMenu = installBlockMenu(crepe);
     if (markdown) this.setContent(markdown);
   }
@@ -122,6 +134,12 @@ export class Editor {
   /** Replace the whole document without tearing the instance down. */
   setContent(markdown: string): void {
     this.crepe?.editor.action(replaceAll(markdown, true));
+    this.resolveRawHtmlImages();
+  }
+
+  /** Let raw-HTML `<img>` tags load local files, like Markdown images do. */
+  private resolveRawHtmlImages(): void {
+    resolveRawHtmlImages(this.host, this.resolveImageSrc);
   }
 
   getMarkdown(): string {

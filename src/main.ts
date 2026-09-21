@@ -10,6 +10,14 @@ import { applyTheme, nextTheme, onSystemThemeChange, type ThemePref } from "./th
 import { FindBar, type FindStatus, type FindTarget } from "./find-bar";
 import { EmojiPicker } from "./emoji";
 import { SettingsPanel, type SettingKey } from "./settings-panel";
+import { UpdateController } from "./update";
+import {
+  findShortcutAction,
+  formatShortcut,
+  withDefaultShortcuts,
+  type ShortcutAction,
+  type ShortcutSettings,
+} from "./shortcuts";
 import { isListMarker, type ListMarker } from "./markdown-serializer";
 import type { BlockActionId } from "./block-menu";
 import {
@@ -49,11 +57,21 @@ interface Settings {
   source_font: string;
   source_font_size: number;
   accent: string;
+  /** Check GitHub for a newer release at startup (at most once a day). */
+  auto_check_updates: boolean;
   open_files: string[];
   /** "ltr"/"rtl" per open_files entry — restores per-file direction. */
   open_dirs: ("ltr" | "rtl")[];
   active_tab: number;
+  /** Unix seconds of the last update check. */
+  last_update_check: number;
+  shortcuts: ShortcutSettings;
   window: WindowState;
+}
+
+interface OpenWithStatus {
+  available: boolean;
+  registered: boolean;
 }
 
 interface SettingsPayload {
@@ -73,6 +91,24 @@ const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
 const findBar = new FindBar(editorHost);
 const emojiPicker = new EmojiPicker();
 const settingsPanel = new SettingsPanel(() => settings);
+const updater = new UpdateController({
+  autoCheck: () => settings.auto_check_updates !== false,
+  lastCheck: () => Number(settings.last_update_check) || 0,
+  setLastCheck: (seconds) => {
+    settings.last_update_check = seconds;
+    persistSoon();
+  },
+  prepareExit: async () => {
+    if (closing) return false;
+    if (tabBar.tabs.some((tab) => tab.dirty)) {
+      const go = await ask(t("update.unsavedInstall"), { title: "Mowl", kind: "warning" });
+      if (!go) return false;
+    }
+    await captureGeometry();
+    await flushSettings();
+    return true;
+  },
+});
 
 let settings: Settings;
 let switching = false;
@@ -161,8 +197,9 @@ onLangChange(() => {
   emojiPicker.retranslate();
   settingsPanel.retranslate();
   tabBar.render();
-  updateSourceButton();
   updateThemeButton();
+  updateShortcutTitles();
+  updater.retranslate();
   updateTitle();
 });
 
@@ -336,6 +373,26 @@ settingsPanel.onChange = (key: SettingKey, value) => {
     // direction / quit_on_escape / open_last_session: no immediate effect
   }
   persistSoon();
+};
+settingsPanel.onShortcutChange = (action, value) => {
+  settings.shortcuts[action] = value;
+  updateShortcutTitles();
+  persistSoon();
+};
+settingsPanel.onOpenWithToggle = async () => {
+  try {
+    const current = await invoke<OpenWithStatus>("open_with_status");
+    const next = await invoke<OpenWithStatus>(
+      current.registered ? "unregister_open_with" : "register_open_with",
+    );
+    settingsPanel.setOpenWith(next.available, next.registered);
+  } catch (e) {
+    await message(String(e), { title: "Mowl", kind: "error" });
+  }
+};
+settingsPanel.onCheckUpdates = async () => {
+  await updater.check(false);
+  return updater.summary();
 };
 settingsPanel.onClose = () => (sourceMode ? sourceEl : editor).focus();
 
@@ -558,8 +615,31 @@ function updateSourceButton(): void {
   btn.innerHTML = sourceMode ? ICON_TO_WYSIWYG : ICON_TO_SOURCE;
   btn.setAttribute(
     "title",
-    sourceMode ? t("toolbar.sourceBack.title") : t("toolbar.source.title"),
+    withShortcut(
+      sourceMode ? t("toolbar.sourceBack.title") : t("toolbar.source.title"),
+      "toggle_source",
+    ),
   );
+}
+
+/** "Label (Ctrl+S)" using the currently configured binding. */
+function withShortcut(label: string, ...actions: ShortcutAction[]): string {
+  const keys = actions
+    .map((a) => settings?.shortcuts?.[a])
+    .filter(Boolean)
+    .map((k) => formatShortcut(k));
+  return keys.length ? `${label} (${keys.join(", ")})` : label;
+}
+
+/** Toolbar tooltips show the user's bindings, not the built-in defaults. */
+function updateShortcutTitles(): void {
+  const set = (id: string, label: string, ...actions: ShortcutAction[]) =>
+    document.getElementById(id)?.setAttribute("title", withShortcut(label, ...actions));
+  set("btn-open", t("toolbar.open.title"), "new_tab", "open");
+  set("btn-save", t("toolbar.save.title"), "save");
+  set("btn-export", t("toolbar.export.title"), "export");
+  set("btn-settings", t("toolbar.settings.title"), "settings");
+  updateSourceButton();
 }
 
 // --- theme button -----------------------------------------------------
@@ -787,10 +867,27 @@ function wireOpenMenu(): void {
 
 // --- wiring --------------------------------------------------------------
 
+const SHORTCUT_HANDLERS: Record<ShortcutAction, () => void> = {
+  new_tab: () => newTab(),
+  open: () => void openDialog(),
+  save: () => void saveDoc(),
+  save_as: () => void saveAs(),
+  close_tab: () => void closeActiveTab(),
+  export: () => void chooseExport(),
+  toggle_source: () => toggleSource(),
+  find: () => openFind(false),
+  replace: () => openFind(true),
+  emoji: () => emojiPicker.open(sourceMode ? null : editor.caretRect()),
+  settings: () => (settingsPanel.isOpen ? settingsPanel.close() : settingsPanel.open()),
+};
+
 function wireShortcuts(): void {
   window.addEventListener(
     "keydown",
     (e) => {
+      // A shortcut field in the settings panel is recording this key press.
+      if (settingsPanel.isCapturingShortcut) return;
+
       // Esc-to-quit (opt-in). Runs after the block menu's own Esc handler,
       // which stops propagation while it is open.
       if (
@@ -829,44 +926,16 @@ function wireShortcuts(): void {
         }
       }
 
+      const action = findShortcutAction(e, settings.shortcuts);
+      if (action) {
+        e.preventDefault();
+        SHORTCUT_HANDLERS[action]();
+        return;
+      }
+
       const mod = e.ctrlKey || e.metaKey;
       if (!mod) return;
-      const k = e.key.toLowerCase();
-      if (k === "s" && !e.shiftKey) {
-        e.preventDefault();
-        void saveDoc();
-      } else if (k === "s" && e.shiftKey) {
-        e.preventDefault();
-        void saveAs();
-      } else if (k === "o") {
-        e.preventDefault();
-        void openDialog();
-      } else if (k === "n") {
-        e.preventDefault();
-        newTab();
-      } else if (k === "w") {
-        e.preventDefault();
-        void closeActiveTab();
-      } else if (k === "e") {
-        e.preventDefault();
-        void chooseExport();
-      } else if (e.shiftKey && k === "c") {
-        e.preventDefault();
-        toggleSource();
-      } else if (k === "f" && !e.shiftKey) {
-        e.preventDefault();
-        openFind(false);
-      } else if (k === "h" && !e.shiftKey) {
-        e.preventDefault();
-        openFind(true);
-      } else if (k === "." && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        emojiPicker.open(sourceMode ? null : editor.caretRect());
-      } else if (k === "," && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        if (settingsPanel.isOpen) settingsPanel.close();
-        else settingsPanel.open();
-      } else if (
+      if (
         !e.shiftKey && !e.altKey &&
         e.key >= "0" && e.key <= "7" && e.key.length === 1
       ) {
@@ -963,6 +1032,36 @@ async function quitApp(): Promise<void> {
   await win.destroy();
 }
 
+const MARKDOWN_FILE = /\.(?:md|markdown|mdx|txt)$/i;
+
+/** Open Markdown files dropped onto the window. With `dragDropEnabled` the OS
+ *  file drop is delivered by Tauri (not as an HTML5 drop), so it is handled here;
+ *  anything that isn't a Markdown/text file is ignored. */
+async function wireFileDrop(): Promise<void> {
+  const setHint = (on: boolean) => document.body.classList.toggle("mowl-file-drag", on);
+  await win.onDragDropEvent((event) => {
+    const p = event.payload;
+    if (p.type === "enter") {
+      setHint(p.paths.some((f) => MARKDOWN_FILE.test(f)));
+    } else if (p.type === "leave") {
+      setHint(false);
+    } else if (p.type === "drop") {
+      setHint(false);
+      const paths = p.paths.filter((f) => MARKDOWN_FILE.test(f));
+      if (!paths.length) return;
+      void (async () => {
+        for (const path of paths) await openPath(path);
+        try {
+          await win.unminimize();
+          await win.setFocus();
+        } catch {
+          /* not critical */
+        }
+      })();
+    }
+  });
+}
+
 async function wireWindowState(): Promise<void> {
   scale = await win.scaleFactor();
 
@@ -1036,11 +1135,18 @@ async function restoreTabs(): Promise<void> {
 async function bootstrap(): Promise<void> {
   const payload = await invoke<SettingsPayload>("get_settings");
   settings = payload.settings;
+  settings.shortcuts = withDefaultShortcuts(settings.shortcuts);
+  void updater.init().then(() => {
+    settingsPanel.setUpdatesSupported(updater.supported);
+  });
   if (!isListMarker(settings.list_marker)) settings.list_marker = "*";
 
   setLang(settings.language ?? "system");
   applyStaticI18n();
   settingsPanel.setPath(payload.location);
+  void invoke<OpenWithStatus>("open_with_status")
+    .then((s) => settingsPanel.setOpenWith(s.available, s.registered))
+    .catch(() => {});
   applyAppearance();
   applyTheme(settings.theme);
   editor.setListMarker(settings.list_marker);
@@ -1064,6 +1170,9 @@ async function bootstrap(): Promise<void> {
     settings.source_font = ext.source_font;
     settings.source_font_size = ext.source_font_size;
     settings.accent = ext.accent;
+    settings.auto_check_updates = ext.auto_check_updates;
+    settings.shortcuts = withDefaultShortcuts(ext.shortcuts);
+    updateShortcutTitles();
     applyLanguage(settings.language); // no-op if unchanged
     applyAppearance();
     applyTheme(settings.theme);
@@ -1127,10 +1236,11 @@ async function bootstrap(): Promise<void> {
   wireButtons();
   wireAbout();
   wireOpenMenu();
-  updateSourceButton();
+  updateShortcutTitles();
   updateThemeButton();
   wireShortcuts();
   await wireWindowState();
+  await wireFileDrop();
 }
 
 bootstrap().catch(async (e) => {

@@ -94,6 +94,28 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
+      # In-app updater (src-tauri/src/update.rs): every asset it may download needs
+      # a `<asset>.sig` next to it. Installers are signed here; the portable
+      # Mowl.exe is uploaded by hand, so sign it the same way (see ARCHITECTURE.md,
+      # "Releases and updates"). Skipped, with a warning, until the
+      # TAURI_SIGNING_PRIVATE_KEY secret exists.
+      - name: Sign installers for the updater
+        if: startsWith(matrix.os, 'windows')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY}" ]; then
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not set - no update signatures were made"
+            exit 0
+          fi
+          for f in src-tauri/target/${{ matrix.rust-target }}/release/bundle/nsis/*-setup.exe; do
+            pnpm tauri signer sign -p "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD}" "$f"
+            gh release upload "${RELEASE_TAG}" "$f.sig" --repo "${{ github.repository }}" --clobber
+          done
+
   checksums:
     needs: build
     runs-on: ubuntu-latest
