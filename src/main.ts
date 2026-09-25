@@ -416,7 +416,7 @@ function sourceEdit(text: string, from: number, to: number): void {
 sourceEl.addEventListener("keydown", (e) => {
   if (e.key !== "Tab" || e.ctrlKey || e.metaKey || e.altKey) return;
   e.preventDefault();
-  const unit = "\t";
+  const unit = "  "; // two spaces, matching the list indent Mowl saves
   const { selectionStart: a, selectionEnd: b, value } = sourceEl;
   if (a === b && !e.shiftKey) {
     sourceEdit(unit, a, b);
