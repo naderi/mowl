@@ -15,6 +15,7 @@ import {
   type BlockMenuHandle,
 } from "./block-menu";
 import { emojiInputRule } from "./emoji";
+import { listIndentKeymap } from "./list-indent";
 import { t } from "./i18n";
 import {
   configureMarkdownSerializer,
@@ -110,7 +111,8 @@ export class Editor {
       .use(findPlugin)
       .use(rawHtmlPresentationPlugin)
       .use(imageToolbarPlugin)
-      .use(emojiInputRule);
+      .use(emojiInputRule)
+      .use(listIndentKeymap);
     crepe.on((listener) => {
       listener.markdownUpdated(() => {
         this.onChange();
