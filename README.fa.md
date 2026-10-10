@@ -309,3 +309,7 @@ Mowl را گسترش می‌دهید؟ **[ARCHITECTURE.md](ARCHITECTURE.md)** ر
 اگر Mowl در وقت شما صرفه‌جویی می‌کند، می‌توانید از توسعهٔ آن در Ko‑fi حمایت کنید. ☕
 
 <a href='https://ko-fi.com/N7N123QIX0' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
+---
+
+© 2026 [Ali Naderi](https://github.com/naderi) · [digitalent.dev](https://digitalent.dev/en/)
