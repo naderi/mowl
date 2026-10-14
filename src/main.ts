@@ -816,7 +816,7 @@ function wireAbout(): void {
   });
   document.getElementById("about-link")?.addEventListener("click", (e) => {
     e.preventDefault();
-    void openUrl("https://github.com/naderi");
+    void openUrl("https://digitalent.dev");
   });
 }
 
