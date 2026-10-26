@@ -110,6 +110,7 @@ add a table straight from the block menu, and hand‑typed tables are automatica
 ### 🧮 Math & 💻 code
 
 - **KaTeX** math, inline (`$…$`) and display (`$$…$$`)
+- **Mermaid** diagrams (flowcharts and more) in ```` ```mermaid ```` code blocks, drawn right below the code
 - Syntax‑highlighted **code blocks** with language detection
 
 Plus the rest of GFM: task lists, footnotes, strikethrough, autolinks.

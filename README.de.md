@@ -119,6 +119,7 @@ getippte Tabellen werden in der gespeicherten `.md`‑Datei automatisch
 ### 🧮 Formeln & 💻 Code
 
 - **KaTeX**‑Formeln, inline (`$…$`) und abgesetzt (`$$…$$`)
+- **Mermaid**‑Diagramme (Flussdiagramme und mehr) in ```` ```mermaid ````‑Codeblöcken, direkt unter dem Code gezeichnet
 - Syntaxhervorgehobene **Codeblöcke** mit Spracherkennung
 
 Dazu der Rest von GFM: Aufgabenlisten, Fußnoten, Durchstreichen, Autolinks.

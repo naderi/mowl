@@ -1169,6 +1169,20 @@ async function bootstrap(): Promise<void> {
   editor.setListMarker(settings.list_marker);
   tabBar.setAlwaysShow(settings.always_show_tabbar);
   onSystemThemeChange(() => {});
+  // Mermaid diagrams are drawn in the colours of the theme they were created in: draw them again after a change
+  let drawnTheme = document.documentElement.dataset.theme;
+  new MutationObserver(() => {
+    const now = document.documentElement.dataset.theme;
+    if (now === drawnTheme) return;
+    drawnTheme = now;
+    if (sourceMode || !/^\s*```\s*mermaid/im.test(editor.getMarkdown())) return;
+    switching = true;
+    void editor.reload().then(() => {
+      applyDirection(tabBar.active?.direction ?? "ltr");
+      editor.setSpellcheck(settings.spellcheck);
+      switching = false;
+    });
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
   // React to hand edits of settings.toml (the file watcher emits this).
   void listen<Settings>("settings-changed", (e) => {

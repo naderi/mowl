@@ -2,6 +2,7 @@
 // swapped in place (tabbed editing keeps a single instance — see tabs.ts).
 import { invoke } from "@tauri-apps/api/core";
 import { Crepe } from "@milkdown/crepe";
+import { isMermaidLanguage, renderMermaid } from "./mermaid";
 import "@milkdown/crepe/theme/common/style.css";
 import { replaceAll } from "@milkdown/kit/utils";
 import { editorViewCtx } from "@milkdown/kit/core";
@@ -102,6 +103,15 @@ export class Editor {
       featureConfigs: {
         [Crepe.Feature.ImageBlock]: { proxyDomURL: this.resolveImageSrc },
         [Crepe.Feature.Placeholder]: { text: t("editor.placeholder") },
+        [Crepe.Feature.CodeMirror]: {
+          // ```mermaid blocks get a diagram below the code (LaTeX is chained in front of this by Crepe)
+          renderPreview: (language, content, applyPreview) => {
+            if (!isMermaidLanguage(language)) return null;
+            if (!content.trim()) return null;
+            renderMermaid(content, applyPreview);
+            return undefined;
+          },
+        },
       },
     });
     const marker = this.listMarker;

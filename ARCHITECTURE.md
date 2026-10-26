@@ -53,6 +53,7 @@ portable native shell using the OS WebView instead of bundling Chromium.
 | `src/settings-panel.ts` | The settings GUI (`#settings-panel`, `Ctrl/Cmd+,` or the gear button). Full‑screen overlay that flips in over the editor; one control per hand‑editable `settings.toml` key. "Dumb" — reports each change via `onChange`; `main.ts` owns the object, the apply‑functions and the debounced save. |
 | `src/markdown-serializer.ts` | `remarkStringifyOptionsCtx` tweaks: bullet‑list marker (`*`/`-`/`+`) and link/image handlers that stop `&` in URLs being escaped. Applied in `Editor.init` via `crepe.editor.config`. |
 | `src/find.ts` | `$prose` plugin for WYSIWYG find: scans text nodes for the query, decorates matches, exposes state via `findKey`. |
+| `src/mermaid.ts` | Mermaid diagrams: lazy-loads `mermaid` and renders ```` ```mermaid ```` blocks as the code-block preview (hooked into Crepe's CodeMirror `renderPreview` in `editor.ts`; LaTeX is chained in front). `main.ts` redraws them after a theme change. |
 | `src/find-bar.ts` | The find / replace bar UI (`#find-bar`). Backend‑agnostic — `main.ts` hands it a `FindTarget` for the editor or the source textarea. |
 | `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu + emoji picker. Theme tokens on `:root`. |
 | `src-tauri/src/lib.rs` | Tauri builder: plugins (single‑instance first), `AppState`, command registry, `.setup()` spawns the `settings.toml` watcher. `file_arg()` picks a Markdown path out of argv. |

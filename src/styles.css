@@ -839,3 +839,16 @@ body.mowl-file-drag::after {
   font-family: var(--source-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   word-break: break-all;
 }
+
+/* Mermaid diagrams below ```mermaid code blocks */
+.milkdown .milkdown-code-block .preview svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+.milkdown .milkdown-code-block .preview .mermaid-error {
+  color: var(--crepe-color-error, #c42b1c);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
