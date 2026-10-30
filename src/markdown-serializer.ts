@@ -11,6 +11,7 @@
 
 import { remarkStringifyOptionsCtx } from "@milkdown/kit/core";
 import type { Ctx } from "@milkdown/kit/ctx";
+import { defaultHandlers } from "mdast-util-to-markdown";
 
 export type ListMarker = "*" | "-" | "+";
 
@@ -123,6 +124,32 @@ function makeMediaHandler(image: boolean) {
   return handler;
 }
 
+/**
+ * Directly adjacent bullet lists would be written with an alternating second
+ * marker (`bulletOther`) so they stay separate lists — which leaves stray `*`
+ * items in a `-` document. Merge them into one list instead.
+ */
+function mergeAdjacentBulletLists(node: any): void {
+  if (!Array.isArray(node.children)) return;
+  const out: any[] = [];
+  for (const child of node.children) {
+    const prev = out[out.length - 1];
+    if (prev && prev.type === "list" && child.type === "list" && !prev.ordered && !child.ordered) {
+      prev.children.push(...child.children);
+      prev.spread = Boolean(prev.spread || child.spread);
+    } else {
+      out.push(child);
+    }
+  }
+  node.children = out;
+  for (const child of out) mergeAdjacentBulletLists(child);
+}
+
+const rootHandler = (node: any, parent: any, state: any, info: any): string => {
+  mergeAdjacentBulletLists(node);
+  return (defaultHandlers as any).root(node, parent, state, info);
+};
+
 /** Apply Mowl's serializer preferences to a Milkdown editor context. */
 export function configureMarkdownSerializer(ctx: Ctx, marker: ListMarker): void {
   const current = ctx.get(remarkStringifyOptionsCtx) as any;
@@ -132,6 +159,7 @@ export function configureMarkdownSerializer(ctx: Ctx, marker: ListMarker): void 
     bulletOther: marker === "*" ? "-" : "*",
     handlers: {
       ...current.handlers,
+      root: rootHandler,
       link: makeMediaHandler(false),
       image: makeMediaHandler(true),
     },
