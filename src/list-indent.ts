@@ -6,7 +6,7 @@
 import { listItemSchema } from "@milkdown/kit/preset/commonmark";
 import { $prose } from "@milkdown/kit/utils";
 import { keymap } from "@milkdown/kit/prose/keymap";
-import { sinkListItem } from "@milkdown/kit/prose/schema-list";
+import { liftListItem, sinkListItem } from "@milkdown/kit/prose/schema-list";
 import { TextSelection, type Command } from "@milkdown/kit/prose/state";
 
 export const listIndentKeymap = $prose((ctx) => {
@@ -42,5 +42,35 @@ export const listIndentKeymap = $prose((ctx) => {
     );
   };
 
-  return keymap({ Tab: indentFromFirst });
+  // Selection that starts inside a list but runs past its end (e.g. the last
+  // items selected down into the empty paragraph after the list): there is no
+  // common list range then, so Tab/Shift-Tab did nothing. Clip the selection to
+  // the end of the list and run the command on that.
+  const clipToList = (cmd: Command): Command => (state, dispatch) => {
+    const { $from, $to } = state.selection;
+    if ($from.sameParent($to)) return false;
+    for (let d = $from.depth; d > 0; d--) {
+      const list = $from.node(d);
+      if (list.childCount === 0 || list.firstChild!.type !== itemType) continue;
+      if ($to.pos <= $from.end(d)) return false; // still inside: normal handling
+      const clipped = TextSelection.between($from, state.doc.resolve($from.end(d)));
+      const shifted = state.apply(state.tr.setSelection(clipped));
+      return cmd(
+        shifted,
+        dispatch &&
+          ((inner) => {
+            const tr = state.tr;
+            inner.steps.forEach((step) => tr.step(step));
+            dispatch(tr.scrollIntoView());
+          }),
+      );
+    }
+    return false;
+  };
+
+  return keymap({
+    Tab: (state, dispatch, view) =>
+      indentFromFirst(state, dispatch, view) || clipToList(sink)(state, dispatch, view),
+    "Shift-Tab": clipToList(liftListItem(itemType)),
+  });
 });
