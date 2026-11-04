@@ -68,10 +68,13 @@ html, body { margin: 0; background: var(--bg); }
 }
 
 @media print {
-  @page { margin: 18mm; }
-  html, body { background: #fff; }
+  @page {
+    margin: 18mm 18mm 22mm;
+    @bottom-center { content: counter(page) " / " counter(pages); font: 9pt "Segoe UI", sans-serif; color: #59636e; }
+  }
+  html, body { background: #fff; width: auto; }
   .markdown-body {
-    color: #000; max-width: none; padding: 0;
+    color: #000; max-width: none; width: auto; margin: 0; padding: 0;
     font-size: 11pt; line-height: 1.5;
   }
   .markdown-body a { color: #000; text-decoration: underline; }

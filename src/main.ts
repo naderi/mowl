@@ -582,7 +582,7 @@ async function exportPdf(): Promise<void> {
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
   frame.style.cssText =
-    "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+    "position:fixed;left:-10000px;top:0;width:1200px;height:900px;border:0;visibility:hidden;";
   frame.srcdoc = html;
   frame.onload = () => {
     window.setTimeout(() => {
