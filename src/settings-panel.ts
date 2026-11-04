@@ -21,6 +21,7 @@ export interface PanelSettings {
   spellcheck: boolean;
   quit_on_escape: boolean;
   always_show_tabbar: boolean;
+  print_page_numbers: boolean;
   open_last_session: boolean;
   show_path: boolean;
   list_marker: string;
@@ -116,6 +117,11 @@ const SECTIONS: Section[] = [
         key: "always_show_tabbar",
         kind: "checkbox",
         label: "settings.alwaysShowTabbar",
+      },
+      {
+        key: "print_page_numbers",
+        kind: "checkbox",
+        label: "settings.printPageNumbers",
       },
       {
         key: "open_last_session",

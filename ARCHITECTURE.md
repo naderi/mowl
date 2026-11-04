@@ -58,7 +58,7 @@ portable native shell using the OS WebView instead of bundling Chromium.
 | `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu + emoji picker. Theme tokens on `:root`. |
 | `src-tauri/src/lib.rs` | Tauri builder: plugins (single‑instance first), `AppState`, command registry, `.setup()` spawns the `settings.toml` watcher. `file_arg()` picks a Markdown path out of argv. |
 | `src-tauri/src/commands.rs` | All `#[tauri::command]`s: `get_settings`, `save_settings`, `read_document`, `write_document`, `render_html`, `read_image_data_url` (+ a local base64 encoder — no crate). `get_settings`'s payload also carries `version` (`CARGO_PKG_VERSION`) for the About panel. |
-| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (language, theme, direction, spellcheck, fonts, accent, quit_on_escape, list_marker, show_path, open_last_session, always_show_tabbar) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
+| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (language, theme, direction, spellcheck, fonts, accent, quit_on_escape, list_marker, show_path, open_last_session, always_show_tabbar, print_page_numbers) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
 | `src-tauri/src/portable.rs` | Resolves the portable data dir (next to exe; on macOS next to the `.app`); writability check + OS‑config fallback. |
 | `src-tauri/src/export.rs` | `render_html`: Markdown → GFM HTML (comrak) wrapped in a self‑contained page. |
 | `src-tauri/src/mdfmt.rs` | `format_tables`: pretty‑prints GFM tables in a Markdown string. |

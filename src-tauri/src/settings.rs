@@ -97,6 +97,8 @@ pub struct Settings {
     pub open_last_session: bool,
     /// Keep the tab bar visible even when only one file is open.
     pub always_show_tabbar: bool,
+    /// Print the page number ("1 / 5") at the bottom of every printed / PDF page.
+    pub print_page_numbers: bool,
     /// WYSIWYG editor font family ("" = built-in default).
     pub editor_font: String,
     /// Base editor font size in px (headings scale from this).
@@ -136,6 +138,7 @@ impl Default for Settings {
             show_path: false,
             open_last_session: true,
             always_show_tabbar: false,
+            print_page_numbers: true,
             editor_font: String::new(),
             editor_font_size: 16,
             source_font: String::new(),

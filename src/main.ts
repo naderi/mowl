@@ -52,6 +52,8 @@ interface Settings {
   open_last_session: boolean;
   /** Keep the tab bar visible even when only one file is open. */
   always_show_tabbar: boolean;
+  /** Page numbers at the bottom of printed / PDF pages. */
+  print_page_numbers: boolean;
   editor_font: string;
   editor_font_size: number;
   source_font: string;
@@ -583,7 +585,9 @@ async function exportPdf(): Promise<void> {
   frame.setAttribute("aria-hidden", "true");
   frame.style.cssText =
     "position:fixed;left:-10000px;top:0;width:1200px;height:900px;border:0;visibility:hidden;";
-  frame.srcdoc = html;
+  frame.srcdoc = settings.print_page_numbers === false
+    ? html.replace("</head>", "<style>@page { @bottom-center { content: none; } }</style></head>")
+    : html;
   frame.onload = () => {
     window.setTimeout(() => {
       frame.contentWindow?.focus();
@@ -1195,6 +1199,7 @@ async function bootstrap(): Promise<void> {
     settings.show_path = ext.show_path;
     settings.open_last_session = ext.open_last_session;
     settings.always_show_tabbar = ext.always_show_tabbar;
+    settings.print_page_numbers = ext.print_page_numbers;
     tabBar.setAlwaysShow(ext.always_show_tabbar);
     settings.editor_font = ext.editor_font;
     settings.editor_font_size = ext.editor_font_size;
