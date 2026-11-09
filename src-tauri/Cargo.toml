@@ -1,6 +1,6 @@
 [package]
 name = "mowl"
-version = "1.8.4"
+version = "1.8.5"
 description = "Mowl - a minimalist WYSIWYG Markdown editor"
 authors = ["naderi"]
 edition = "2021"

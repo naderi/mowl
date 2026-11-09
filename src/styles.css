@@ -341,6 +341,11 @@ body.mowl-file-drag::after {
   color: var(--accent, #0969da);
   text-decoration: underline;
 }
+#editor .milkdown .mowl-html-rich { margin: 0.6em 0; }
+#editor .milkdown .mowl-html-rich .mowl-html-flex { display: flex; align-items: flex-start; gap: 16px; }
+#editor .milkdown .mowl-html-rich .mowl-html-round { border-radius: 50%; }
+#editor .milkdown .mowl-html-rich img { max-width: 100%; height: auto; flex-shrink: 0; }
+#editor .milkdown .mowl-html-rich span { display: inline; }
 #editor .milkdown .mowl-kbd {
   display: inline-block;
   min-width: 1.35em;

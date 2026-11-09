@@ -321,6 +321,59 @@ function rawImageDom(value: string): DomSpec | null {
   return ["img", attrs];
 }
 
+const RICH_TAGS = new Set([
+  "DIV", "SPAN", "P", "A", "IMG", "BR", "B", "STRONG", "I", "EM", "CENTER", "SMALL", "SUB", "SUP",
+]);
+const RICH_ATTRS = new Set(["alt", "title", "width", "height", "align"]);
+
+/** Copy `src` into a new inert element, keeping only harmless tags/attributes.
+ *  Tailwind-style `class`/`className` tokens map to a few layout hints. */
+function sanitizeInto(src: Node, out: Node): void {
+  src.childNodes.forEach((n) => {
+    if (n.nodeType === Node.TEXT_NODE) {
+      out.appendChild(document.createTextNode(n.textContent ?? ""));
+      return;
+    }
+    if (!(n instanceof HTMLElement) || !RICH_TAGS.has(n.tagName)) return;
+    const el = document.createElement(n.tagName);
+    for (const name of RICH_ATTRS) {
+      const v = n.getAttribute(name);
+      if (v !== null) el.setAttribute(name, v);
+    }
+    const tokens = (n.getAttribute("class") ?? n.getAttribute("classname") ?? "").split(/\s+/);
+    if (tokens.includes("flex")) el.classList.add("mowl-html-flex");
+    if (tokens.includes("rounded-full")) el.classList.add("mowl-html-round");
+    const w = tokens.map((t) => /^w-(\d+)$/.exec(t)).find(Boolean);
+    if (w) el.style.width = `${Number(w[1]) * 4}px`;
+    if (n instanceof HTMLImageElement) {
+      const raw = (n.getAttribute("src") ?? "").trim();
+      el.setAttribute("src", raw);
+      el.setAttribute("data-mowl-html-img", "true");
+      el.setAttribute("data-mowl-src", raw);
+    } else if (n instanceof HTMLAnchorElement) {
+      el.classList.add("mowl-html-link");
+      el.setAttribute("title", n.getAttribute("href") ?? "");
+    }
+    sanitizeInto(n, el);
+    out.appendChild(el);
+  });
+}
+
+/** An html block that mixes an <img> with other content (a profile card, say). */
+function richImageDom(value: string): HTMLElement | null {
+  if (!/<img\b/i.test(value) || !/^\s*</.test(value)) return null;
+  const template = document.createElement("template");
+  template.innerHTML = value.trim();
+  if (!template.content.querySelector("img")) return null;
+  const box = document.createElement("div");
+  box.className = "mowl-html-rich";
+  box.setAttribute("data-type", "html");
+  box.setAttribute("data-value", value);
+  box.setAttribute("data-mowl-rich", "true");
+  sanitizeInto(template.content, box);
+  return box;
+}
+
 function structuralDom(value: string): DomSpec | null {
   const s = parseStructural(value);
   if (!s) return null;
@@ -341,12 +394,16 @@ export function patchHtmlMarkdown(crepe: Crepe): void {
       if (MORE_COMMENT.test(value.trim())) {
         return ["span", { "data-type": "html", "data-value": value, "data-mowl-html": "more" }];
       }
-      return rawImageDom(value) ?? structuralDom(value) ?? fallback(node);
+      return rawImageDom(value) ?? structuralDom(value) ?? richImageDom(value) ?? fallback(node);
     };
 
     // Re-reading rendered DOM (drag & drop) must map these back to the same node.
     const parseDOM = Array.isArray(spec.parseDOM) ? spec.parseDOM : [];
     spec.parseDOM = [
+      {
+        tag: "div[data-mowl-rich]",
+        getAttrs: (dom: HTMLElement) => ({ value: dom.dataset.value ?? "" }),
+      },
       {
         tag: "img[data-mowl-html-img]",
         getAttrs: (dom: HTMLElement) => ({ value: dom.dataset.value ?? "" }),
