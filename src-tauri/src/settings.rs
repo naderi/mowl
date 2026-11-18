@@ -82,7 +82,7 @@ pub struct Settings {
     // --- hand-editable preferences ---
     /// UI language: "system" (OS locale) | "en" | "de"
     pub language: String,
-    /// "system" | "light" | "dark"
+    /// "system" | "light" | "dark", or the file name of a colour theme (bundled or in the `Themes` folder)
     pub theme: String,
     /// "ltr" | "rtl" — base writing direction of the editor.
     pub direction: String,
@@ -93,6 +93,8 @@ pub struct Settings {
     pub list_marker: String,
     /// Show the full file path (not just the file name) in the editor header.
     pub show_path: bool,
+    /// Colour Markdown syntax in the source view.
+    pub source_highlight: bool,
     /// Reopen the previous session's tabs on startup.
     pub open_last_session: bool,
     /// Keep the tab bar visible even when only one file is open.
@@ -136,6 +138,7 @@ impl Default for Settings {
             quit_on_escape: false,
             list_marker: "*".to_string(),
             show_path: false,
+            source_highlight: true,
             open_last_session: true,
             always_show_tabbar: false,
             print_page_numbers: true,

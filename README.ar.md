@@ -121,6 +121,10 @@
 سمة فاتحة وداكنة تتبع نظام التشغيل افتراضيًّا، مع مبدِّل يدويّ. خطّ المحرّر وحجم
 الخطّ وخطّ عرض المصدر ولون التمييز كلّها قابلة للضبط.
 
+إضافةً إلى ذلك يمكن اختيار سمات الألوان من الإعدادات: تأتي GitHub Light وGitHub Dark مع Mowl. تلوّن السمة
+النافذة والمحرّر وصياغة كتل الشيفرة. يمكنك إضافة أي سمة ألوان قياسية من VS Code (`.json`) بوضعها في مجلّد
+`Themes` بجوار `settings.toml`، وحذف ما لا تحتاجه منها.
+
 ### 🧩 HTML الخام، معروضًا
 
 ملفّات Markdown القادمة من GitHub مليئة بمقاطع HTML صغيرة. يعرض Mowl الشائع منها
@@ -239,12 +243,13 @@
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
+theme = "system"            # system | light | dark | a theme file name, e.g. "github-dark"
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
-show_path = false           # show the full file path in the header, not just the name
+show_path = false           # show the full file path in the title bar, not just the name
+source_highlight = true     # colour Markdown syntax in the source view
 open_last_session = true    # reopen the previous session's tabs on startup
 always_show_tabbar = false  # keep the tab bar visible even with only one file open
 print_page_numbers = true   # page number at the bottom of printed / PDF pages

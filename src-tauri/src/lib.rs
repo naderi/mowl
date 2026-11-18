@@ -5,6 +5,7 @@ mod mdfmt;
 mod portable;
 mod settings;
 mod shell_integration;
+mod themes;
 mod update;
 
 use std::path::Path;
@@ -88,6 +89,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::save_settings,
+            commands::list_themes,
+            commands::set_title_bar,
             commands::read_document,
             commands::write_document,
             commands::render_html,

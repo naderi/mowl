@@ -8,6 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@codemirror/language':
+        specifier: 6.12.4
+        version: 6.12.4
+      '@codemirror/view':
+        specifier: 6.43.9
+        version: 6.43.9
+      '@lezer/highlight':
+        specifier: 1.2.3
+        version: 1.2.3
       '@milkdown/crepe':
         specifier: 7.22.1
         version: 7.22.1(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(typescript@5.6.3)

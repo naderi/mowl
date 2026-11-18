@@ -137,6 +137,11 @@ Helles und dunkles Theme, folgt standardmäßig dem Betriebssystem, mit manuelle
 Umschalter. Editor‑Schrift, Schriftgröße, Quelltext‑Schrift und Akzentfarbe sind
 konfigurierbar.
 
+Zusätzlich lassen sich in den Einstellungen Farb‑Themes wählen: GitHub Light und GitHub Dark liegen bei.
+Ein Theme färbt Fenster, Editor und die Syntax von Codeblöcken. Beliebige Standard‑Farb‑Themes von VS Code
+(`.json`) kannst du hinzufügen, indem du sie in den Ordner `Themes` neben der `settings.toml` legst; nicht
+benötigte kannst du dort löschen.
+
 ### 🧩 Rohes HTML, dargestellt
 
 Markdown‑Dateien von GitHub sind voller kleiner HTML‑Schnipsel. Mowl zeigt die
@@ -269,12 +274,13 @@ Abschnitt ist für die Bearbeitung von Hand gedacht und wird live neu geladen
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
+theme = "system"            # system | light | dark | a theme file name, e.g. "github-dark"
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
-show_path = false           # show the full file path in the header, not just the name
+show_path = false           # show the full file path in the title bar, not just the name
+source_highlight = true     # colour Markdown syntax in the source view
 open_last_session = true    # reopen the previous session's tabs on startup
 always_show_tabbar = false  # keep the tab bar visible even with only one file open
 print_page_numbers = true   # page number at the bottom of printed / PDF pages

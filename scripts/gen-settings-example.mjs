@@ -21,12 +21,13 @@ const CONTENT = `# Mowl — example configuration
 # button in the toolbar, or Ctrl/Cmd+,).
 
 language = "system"         # "system" (follow the OS) | "en" | "de"
-theme = "system"            # "system" | "light" | "dark"
+theme = "system"            # "system" | "light" | "dark" | a theme file name from the Themes folder, e.g. "github-dark"
 direction = "ltr"           # "ltr" | "rtl" — default for new tabs (each file keeps its own direction)
 spellcheck = true           # spell-check squiggles in the WYSIWYG editor
 quit_on_escape = false      # when true, pressing Esc quits the app
 list_marker = "*"           # bullet-list marker written on save: "*" | "-" | "+"
-show_path = false           # show the full file path in the header, not just the name
+show_path = false           # show the full file path in the title bar, not just the name
+source_highlight = true     # colour Markdown syntax in the source view
 open_last_session = true    # reopen the previous session's tabs on startup
 always_show_tabbar = false  # keep the tab bar visible even with only one file open
 print_page_numbers = true   # page number at the bottom of printed / PDF pages

@@ -18,6 +18,7 @@ import {
 import { emojiInputRule } from "./emoji";
 import { listIndentKeymap } from "./list-indent";
 import { t } from "./i18n";
+import { colourThemeHighlighting } from "./code-theme";
 import {
   configureMarkdownSerializer,
   type ListMarker,
@@ -48,6 +49,9 @@ export class Editor {
   /** Resolved `data:` URLs, keyed by `docPath \0 src`. */
   private readonly imageCache = new Map<string, string>();
 
+  /** Code blocks take their syntax colours from the active colour theme (applied on the next `init()`). */
+  private colourCode = false;
+
   /** Fires on every content change. */
   onChange: () => void = () => {};
 
@@ -58,6 +62,13 @@ export class Editor {
   /** Bullet-list marker written on save. Applied on the next `init()`. */
   setListMarker(marker: ListMarker): void {
     this.listMarker = marker;
+  }
+
+  /** Whether code blocks use the colour theme's syntax colours. Returns true if that changed. */
+  setColourCode(on: boolean): boolean {
+    const changed = on !== this.colourCode;
+    this.colourCode = on;
+    return changed;
   }
 
   /** Tell the editor which file is being edited, so relative image paths
@@ -104,6 +115,7 @@ export class Editor {
         [Crepe.Feature.ImageBlock]: { proxyDomURL: this.resolveImageSrc },
         [Crepe.Feature.Placeholder]: { text: t("editor.placeholder") },
         [Crepe.Feature.CodeMirror]: {
+          ...(this.colourCode ? { theme: colourThemeHighlighting() } : {}),
           // ```mermaid blocks get a diagram below the code (LaTeX is chained in front of this by Crepe)
           renderPreview: (language, content, applyPreview) => {
             if (!isMermaidLanguage(language)) return null;

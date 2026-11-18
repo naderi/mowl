@@ -127,6 +127,10 @@ Markdownِ ساده و قابل‌حمل است.
 پوستهٔ روشن و تیره که به‌طور پیش‌فرض از سیستم‌عامل پیروی می‌کند، با کلیدِ تعویضِ
 دستی. قلمِ ویرایشگر، اندازهٔ قلم، قلمِ نمای منبع و رنگِ تأکید همگی قابل‌پیکربندی‌اند.
 
+علاوه بر این، پوسته‌های رنگی را می‌توان از تنظیمات انتخاب کرد: GitHub Light و GitHub Dark همراه Mowl هستند.
+پوسته پنجره، ویرایشگر و رنگ‌آمیزی نحوی بلوک‌های کد را رنگ می‌کند. هر پوستهٔ رنگیِ استانداردِ VS Code (`.json`) را
+می‌توانید با گذاشتن در پوشهٔ `Themes` کنار `settings.toml` اضافه کنید و پوسته‌های غیرضروری را حذف کنید.
+
 ### 🧩 HTML خام، نمایش‌داده‌شده
 
 فایل‌های Markdown که از GitHub می‌آیند پر از تکه‌های کوچک HTML‌اند. Mowl رایج‌ترین‌ها
@@ -253,12 +257,13 @@ About می‌گذارد. این تنها لحظه‌ای است که Mowl خود
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
+theme = "system"            # system | light | dark | a theme file name, e.g. "github-dark"
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
-show_path = false           # show the full file path in the header, not just the name
+show_path = false           # show the full file path in the title bar, not just the name
+source_highlight = true     # colour Markdown syntax in the source view
 open_last_session = true    # reopen the previous session's tabs on startup
 always_show_tabbar = false  # keep the tab bar visible even with only one file open
 print_page_numbers = true   # page number at the bottom of printed / PDF pages

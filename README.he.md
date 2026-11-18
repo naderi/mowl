@@ -118,6 +118,10 @@
 ערכת נושא בהירה וכהה שעוקבת אחר מערכת ההפעלה כברירת מחדל, עם מתג ידני. גופן העורך,
 גודל הגופן, גופן תצוגת המקור וצבע ההדגשה — כולם ניתנים להגדרה.
 
+בנוסף אפשר לבחור ערכות צבע בהגדרות: GitHub Light ו‑GitHub Dark מצורפות ל‑Mowl. ערכה צובעת את החלון, העורך
+ואת התחביר של בלוקי הקוד. אפשר להוסיף כל ערכת צבע סטנדרטית של VS Code‏ (`.json`) על ידי הנחתה בתיקייה
+`Themes` לצד `settings.toml`, ולמחוק את אלה שלא צריך.
+
 ### 🧩 HTML גולמי, מוצג
 
 קובצי Markdown מ־GitHub מלאים בקטעי HTML קטנים. Mowl מציג את הנפוצים שבהם כמות
@@ -235,12 +239,13 @@ automatically** או עם `auto_check_updates = false`. ב־**Settings ← Syste
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
+theme = "system"            # system | light | dark | a theme file name, e.g. "github-dark"
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
-show_path = false           # show the full file path in the header, not just the name
+show_path = false           # show the full file path in the title bar, not just the name
+source_highlight = true     # colour Markdown syntax in the source view
 open_last_session = true    # reopen the previous session's tabs on startup
 always_show_tabbar = false  # keep the tab bar visible even with only one file open
 print_page_numbers = true   # page number at the bottom of printed / PDF pages

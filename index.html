@@ -14,7 +14,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7l4.5 6L12 7v10"/><path d="M17 8v8"/><path d="M13.5 12.5 17 16l3.5-3.5"/></svg>
           <span id="update-dot" aria-hidden="true" hidden></span>
         </button>
-        <span id="doc-title" data-tauri-drag-region>Untitled</span>
         <div id="actions">
           <button id="btn-open" data-i18n-title="toolbar.open.title" data-i18n-aria="toolbar.open.aria" title="New / Open (Ctrl/Cmd+N, Ctrl/Cmd+O)" aria-label="New or open file" aria-haspopup="menu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -46,7 +45,10 @@
       </header>
       <nav id="tabs" hidden></nav>
       <main id="editor"></main>
-      <textarea id="source" spellcheck="false" hidden></textarea>
+      <div id="source-wrap" hidden>
+        <pre id="source-hl" aria-hidden="true"></pre>
+        <textarea id="source" spellcheck="false"></textarea>
+      </div>
       <div id="settings-hint" hidden></div>
       <div id="open-menu" role="menu" hidden>
         <button type="button" role="menuitem" data-act="new" data-i18n="menu.new">New</button>

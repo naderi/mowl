@@ -61,17 +61,7 @@ body {
 #btn-about svg { width: 18px; height: 18px; display: block; }
 #btn-about:hover { background: var(--hover); color: var(--accent, #4a7dff); }
 
-#doc-title {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--bar-fg);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-#actions { display: flex; gap: 2px; flex: none; }
+#actions { display: flex; gap: 2px; flex: none; margin-left: auto; }
 #actions button {
   width: 30px;
   height: 30px;
@@ -195,21 +185,62 @@ body {
   right: 0;
 }
 
-#source {
+#source-wrap {
   flex: 1;
   min-height: 0;
+  position: relative;
+  background: var(--bg);
+}
+#source,
+#source-hl {
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
+  margin: 0;
   border: 0;
   outline: none;
   resize: none;
   padding: 28px max(28px, 50% - 400px);
-  background: var(--bg);
+  background: transparent;
   color: var(--fg);
   font-family: var(--source-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace);
   font-size: var(--source-font-size, 15px);
   line-height: 1.7;
   tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
+/* the coloured copy sits behind the textarea, whose own text turns invisible */
+#source-hl {
+  overflow: hidden;
+  pointer-events: none;
+  padding-right: calc(max(28px, 50% - 400px) + var(--sb-w, 0px));
+}
+#source.hl { color: transparent; caret-color: var(--fg); }
+#source.hl::selection { background: color-mix(in srgb, var(--accent, #4a7dff) 35%, transparent); }
+
+#source-hl {
+  --sh-heading: #0550ae; --sh-marker: #cf222e; --sh-code: #0a3069; --sh-strong: #953800;
+  --sh-emphasis: #8250df; --sh-link: #0969da; --sh-quote: #59636e; --sh-tag: #116329;
+}
+:root[data-theme="dark"] #source-hl {
+  --sh-heading: #79c0ff; --sh-marker: #ff7b72; --sh-code: #a5d6ff; --sh-strong: #ffa657;
+  --sh-emphasis: #d2a8ff; --sh-link: #58a6ff; --sh-quote: #9198a1; --sh-tag: #7ee787;
+}
+:root[data-colour-theme] #source-hl {
+  --sh-heading: var(--tok-heading); --sh-marker: var(--tok-keyword); --sh-code: var(--tok-string);
+  --sh-strong: var(--tok-type); --sh-emphasis: var(--tok-func); --sh-link: var(--tok-link);
+  --sh-quote: var(--tok-comment); --sh-tag: var(--tok-tag);
+}
+.sh-heading { color: var(--sh-heading); }
+.sh-marker, .sh-fence { color: var(--sh-marker); }
+.sh-code, .sh-block { color: var(--sh-code); }
+.sh-strong { color: var(--sh-strong); }
+.sh-emphasis { color: var(--sh-emphasis); }
+.sh-link { color: var(--sh-link); }
+.sh-quote { color: var(--sh-quote); }
+.sh-tag { color: var(--sh-tag); }
 
 /* One handle per line: hide Crepe's "+" add-button, keep the dots as a menu
    trigger, and disable block dragging. */
@@ -405,7 +436,7 @@ body.mowl-file-drag::after {
   pointer-events: auto;
 }
 #app.settings-open #editor,
-#app.settings-open #source,
+#app.settings-open #source-wrap,
 #app.settings-open #tabs {
   filter: brightness(0.55);
   transition: filter 0.3s ease;

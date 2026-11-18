@@ -24,6 +24,7 @@ export interface PanelSettings {
   print_page_numbers: boolean;
   open_last_session: boolean;
   show_path: boolean;
+  source_highlight: boolean;
   list_marker: string;
   editor_font: string;
   editor_font_size: number;
@@ -55,6 +56,9 @@ interface Section {
   fields: Field[];
 }
 
+/** Colour themes (bundled + the user's Themes folder), listed after System / Light / Dark. */
+let colourThemes: { id: string; name: string }[] = [];
+
 const SECTIONS: Section[] = [
   {
     title: "settings.section.appearance",
@@ -73,6 +77,7 @@ const SECTIONS: Section[] = [
         key: "theme",
         kind: "select",
         label: "settings.theme",
+        hint: "settings.theme.hint",
         options: [
           { value: "system", label: "settings.theme.system" },
           { value: "light", label: "settings.theme.light" },
@@ -107,6 +112,7 @@ const SECTIONS: Section[] = [
         ],
       },
       { key: "show_path", kind: "checkbox", label: "settings.showPath" },
+      { key: "source_highlight", kind: "checkbox", label: "settings.sourceHighlight" },
     ],
   },
   {
@@ -242,6 +248,12 @@ export class SettingsPanel {
     } else {
       this.#syncOpenWith();
     }
+  }
+
+  setThemes(list: { id: string; name: string }[]): void {
+    colourThemes = list;
+    this.#build();
+    this.refresh();
   }
 
   /** Only builds that can update themselves show the update setting. */
@@ -565,6 +577,14 @@ export class SettingsPanel {
         // list_marker options show the literal marker, not a translated label
         opt.textContent = f.key === "list_marker" ? o.value : t(o.label);
         sel.appendChild(opt);
+      }
+      if (f.key === "theme") {
+        for (const th of colourThemes) {
+          const opt = document.createElement("option");
+          opt.value = th.id;
+          opt.textContent = th.name;
+          sel.appendChild(opt);
+        }
       }
       sel.addEventListener("change", () => this.#emit(f.key, sel.value));
       control = sel;

@@ -126,6 +126,11 @@ Plus the rest of GFM: task lists, footnotes, strikethrough, autolinks.
 Light and dark themes that follow the OS by default, with a manual toggle. Editor
 font, font size, source‑view font, and accent colour are all configurable.
 
+Beyond that, colour themes can be picked in the settings: GitHub Light and GitHub Dark come with Mowl.
+A theme colours the window, the editor and the syntax of code blocks. You can add any standard VS Code
+colour theme (`.json`) by putting it into the `Themes` folder next to `settings.toml`, and remove the
+ones you do not need.
+
 ### 🧩 Raw HTML, rendered
 
 Markdown files from GitHub are full of small HTML snippets. Mowl shows the common
@@ -251,12 +256,13 @@ and is reloaded live:
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
+theme = "system"            # system | light | dark | a theme file name, e.g. "github-dark"
 direction = "ltr"           # ltr | rtl
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
-show_path = false           # show the full file path in the header, not just the name
+show_path = false           # show the full file path in the title bar, not just the name
+source_highlight = true     # colour Markdown syntax in the source view
 open_last_session = true    # reopen the previous session's tabs on startup
 always_show_tabbar = false  # keep the tab bar visible even with only one file open
 print_page_numbers = true   # page number at the bottom of printed / PDF pages

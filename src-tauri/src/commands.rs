@@ -6,7 +6,7 @@ use tauri::State;
 use crate::settings::Settings;
 use crate::shell_integration::{self, OpenWithStatus};
 use crate::update::{self, PreparedUpdate, UpdateInfo};
-use crate::{assets, export, file_arg, mdfmt, AppState};
+use crate::{assets, export, file_arg, mdfmt, themes, AppState};
 
 #[derive(Serialize)]
 pub struct SettingsPayload {
@@ -43,6 +43,50 @@ pub fn save_settings(state: State<AppState>, settings: Settings) -> Result<(), S
         .map_err(|e| e.to_string())?;
     *state.last_write.lock().unwrap() = Some(sig);
     Ok(())
+}
+
+/// Bundled colour themes plus the ones in the `Themes` folder next to `settings.toml`.
+#[tauri::command]
+pub fn list_themes(state: State<AppState>) -> Vec<themes::Theme> {
+    let dir = state.store.lock().unwrap().path.parent().map(|p| p.join("Themes"));
+    themes::list(dir.as_deref())
+}
+
+/// Colours the native title bar (Windows 11): `caption` / `text` are "#rrggbb"
+/// (None = system default), `dark` picks the light or dark caption buttons.
+/// The minimise / maximise / close buttons take the caption colour on their own.
+#[tauri::command]
+pub fn set_title_bar(window: tauri::WebviewWindow, caption: Option<String>, text: Option<String>, dark: bool) {
+    #[cfg(target_os = "windows")]
+    {
+        use std::ffi::c_void;
+        #[link(name = "dwmapi")]
+        extern "system" {
+            fn DwmSetWindowAttribute(hwnd: isize, attr: u32, value: *const c_void, size: u32) -> i32;
+        }
+        const USE_IMMERSIVE_DARK_MODE: u32 = 20;
+        const CAPTION_COLOR: u32 = 35;
+        const TEXT_COLOR: u32 = 36;
+        const COLOR_DEFAULT: u32 = 0xFFFF_FFFF;
+        // "#rrggbb" -> COLORREF (0x00bbggrr)
+        let colorref = |hex: &Option<String>| -> u32 {
+            let h = hex.as_deref().unwrap_or("").trim_start_matches('#');
+            match (h.len() >= 6).then(|| u32::from_str_radix(&h[..6], 16).ok()).flatten() {
+                Some(v) => ((v & 0xFF) << 16) | (v & 0xFF00) | (v >> 16),
+                None => COLOR_DEFAULT,
+            }
+        };
+        let Ok(hwnd) = window.hwnd() else { return };
+        let hwnd = hwnd.0 as isize;
+        let set = |attr: u32, v: u32| unsafe {
+            DwmSetWindowAttribute(hwnd, attr, &v as *const u32 as *const c_void, 4);
+        };
+        set(USE_IMMERSIVE_DARK_MODE, dark as u32);
+        set(CAPTION_COLOR, colorref(&caption));
+        set(TEXT_COLOR, colorref(&text));
+    }
+    #[cfg(not(target_os = "windows"))]
+    let _ = (window, caption, text, dark);
 }
 
 #[tauri::command]

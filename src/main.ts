@@ -6,7 +6,16 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { Editor } from "./editor";
 import { TabBar, baseName, type Tab } from "./tabs";
-import { applyTheme, nextTheme, onSystemThemeChange, type ThemePref } from "./theme";
+import { attachSourceHighlight } from "./source-highlight";
+import {
+  applyTheme,
+  isColourTheme,
+  loadColourThemes,
+  nextTheme,
+  onSystemThemeChange,
+  themeIconKey,
+  type ThemePref,
+} from "./theme";
 import { FindBar, type FindStatus, type FindTarget } from "./find-bar";
 import { EmojiPicker } from "./emoji";
 import { SettingsPanel, type SettingKey } from "./settings-panel";
@@ -48,6 +57,7 @@ interface Settings {
   list_marker: ListMarker;
   /** Show the full file path (not just the name) in the editor header. */
   show_path: boolean;
+  source_highlight: boolean;
   /** Reopen the previous session's tabs on startup. */
   open_last_session: boolean;
   /** Keep the tab bar visible even when only one file is open. */
@@ -87,7 +97,8 @@ interface SettingsPayload {
 const win = getCurrentWindow();
 const editorHost = document.getElementById("editor") as HTMLElement;
 const sourceEl = document.getElementById("source") as HTMLTextAreaElement;
-const titleEl = document.getElementById("doc-title") as HTMLElement;
+const sourceWrap = document.getElementById("source-wrap") as HTMLElement;
+const sourceHl = attachSourceHighlight(sourceEl, document.getElementById("source-hl") as HTMLElement);
 const editor = new Editor(editorHost);
 const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
 const findBar = new FindBar(editorHost);
@@ -126,6 +137,7 @@ function readView(): string {
 function writeView(md: string, scrollTop = 0): void {
   if (sourceMode) {
     sourceEl.value = md;
+    sourceHl.refresh();
     sourceEl.scrollTop = scrollTop;
     return;
   }
@@ -176,6 +188,20 @@ function applyAppearance(): void {
   setOrClear("--editor-font", settings.editor_font);
   setOrClear("--source-font", settings.source_font);
   setOrClear("--accent", settings.accent);
+}
+
+/** Apply the theme setting; code blocks switch between CodeMirror's own colours and the colour theme's, which needs a rebuilt editor. */
+function applyThemeSetting(): void {
+  applyTheme(settings.theme);
+  const changed = editor.setColourCode(isColourTheme(settings.theme));
+  if (changed && !sourceMode && /^\s*(```|~~~)/m.test(editor.getMarkdown())) {
+    switching = true;
+    void editor.reload().then(() => {
+      applyDirection(tabBar.active?.direction ?? "ltr");
+      editor.setSpellcheck(settings.spellcheck);
+      switching = false;
+    });
+  }
 }
 
 function applyDirection(dir: "ltr" | "rtl"): void {
@@ -238,9 +264,7 @@ function updateTitle(): void {
   const mark = tab?.dirty ? "• " : "";
   const name = baseName(tab?.path ?? null);
   const shown = settings?.show_path && tab?.path ? tab.path : name;
-  titleEl.textContent = mark + shown;
-  titleEl.title = tab?.path ?? "";
-  void win.setTitle(`${mark}${name} — Mowl`);
+  void win.setTitle(`${mark}${shown} — Mowl`);
 }
 
 function persistSoon(): void {
@@ -339,7 +363,7 @@ settingsPanel.onChange = (key: SettingKey, value) => {
       applyLanguage(value as LangPref);
       break;
     case "theme":
-      applyTheme(settings.theme);
+      applyThemeSetting();
       updateThemeButton();
       break;
     case "spellcheck":
@@ -347,6 +371,9 @@ settingsPanel.onChange = (key: SettingKey, value) => {
       break;
     case "show_path":
       updateTitle();
+      break;
+    case "source_highlight":
+      sourceHl.setEnabled(settings.source_highlight);
       break;
     case "always_show_tabbar":
       tabBar.setAlwaysShow(settings.always_show_tabbar);
@@ -642,7 +669,7 @@ function updateShortcutTitles(): void {
 
 const SVG_OPEN =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">';
-const THEME_ICON: Record<ThemePref, string> = {
+const THEME_ICON: Record<"system" | "light" | "dark", string> = {
   // "auto": half-lit circle
   system: `${SVG_OPEN}<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>`,
   // sun
@@ -650,7 +677,7 @@ const THEME_ICON: Record<ThemePref, string> = {
   // moon
   dark: `${SVG_OPEN}<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>`,
 };
-const THEME_LABEL_KEY: Record<ThemePref, "theme.label.system" | "theme.label.light" | "theme.label.dark"> = {
+const THEME_LABEL_KEY: Record<"system" | "light" | "dark", "theme.label.system" | "theme.label.light" | "theme.label.dark"> = {
   system: "theme.label.system",
   light: "theme.label.light",
   dark: "theme.label.dark",
@@ -660,8 +687,9 @@ function updateThemeButton(): void {
   const btn = document.getElementById("btn-theme");
   if (!btn) return;
   const pref = settings?.theme ?? "system";
-  btn.innerHTML = THEME_ICON[pref];
-  btn.setAttribute("title", t(THEME_LABEL_KEY[pref]));
+  const key = themeIconKey(pref);
+  btn.innerHTML = THEME_ICON[key];
+  btn.setAttribute("title", t(THEME_LABEL_KEY[key]));
 }
 
 function toggleSource(): void {
@@ -675,7 +703,7 @@ function toggleSource(): void {
 
   sourceMode = !sourceMode;
   editorHost.hidden = sourceMode;
-  sourceEl.hidden = !sourceMode;
+  sourceWrap.hidden = !sourceMode;
 
   writeView(md);
   adoptNormalized(tab);
@@ -982,7 +1010,7 @@ function wireButtons(): void {
   document.getElementById("btn-rtl")?.addEventListener("click", () => setDirection("rtl"));
   document.getElementById("btn-theme")?.addEventListener("click", () => {
     settings.theme = nextTheme(settings.theme);
-    applyTheme(settings.theme);
+    applyThemeSetting();
     updateThemeButton();
     settingsPanel.refresh();
     persistSoon();
@@ -1169,7 +1197,9 @@ async function bootstrap(): Promise<void> {
     .then((s) => settingsPanel.setOpenWith(s.available, s.registered))
     .catch(() => {});
   applyAppearance();
-  applyTheme(settings.theme);
+  sourceHl.setEnabled(settings.source_highlight ?? true);
+  settingsPanel.setThemes(await loadColourThemes());
+  applyThemeSetting();
   editor.setListMarker(settings.list_marker);
   tabBar.setAlwaysShow(settings.always_show_tabbar);
   onSystemThemeChange(() => {});
@@ -1197,6 +1227,8 @@ async function bootstrap(): Promise<void> {
     settings.spellcheck = ext.spellcheck;
     settings.quit_on_escape = ext.quit_on_escape;
     settings.show_path = ext.show_path;
+    settings.source_highlight = ext.source_highlight;
+    sourceHl.setEnabled(settings.source_highlight);
     settings.open_last_session = ext.open_last_session;
     settings.always_show_tabbar = ext.always_show_tabbar;
     settings.print_page_numbers = ext.print_page_numbers;
@@ -1211,8 +1243,11 @@ async function bootstrap(): Promise<void> {
     updateShortcutTitles();
     applyLanguage(settings.language); // no-op if unchanged
     applyAppearance();
-    applyTheme(settings.theme);
-    updateThemeButton();
+    void loadColourThemes().then((list) => {
+      settingsPanel.setThemes(list);
+      applyThemeSetting();
+      updateThemeButton();
+    });
     // `direction` in settings.toml is only the default for new tabs now; the
     // active document keeps its own direction. Just refresh the buttons.
     applyDirection(tabBar.active?.direction ?? "ltr");
