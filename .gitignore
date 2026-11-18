@@ -8,6 +8,7 @@ node_modules
 dist
 dist-ssr
 /release/
+/publish/
 *.local
 
 # Local git backups
