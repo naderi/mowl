@@ -9,6 +9,7 @@ import { $prose } from "@milkdown/kit/utils";
 import { Plugin, PluginKey } from "@milkdown/kit/prose/state";
 import type { EditorView } from "@milkdown/kit/prose/view";
 import type { MarkType } from "@milkdown/kit/prose/model";
+import { eventKey } from "./shortcuts";
 
 const SCHEME_RE = /^(https?|mailto|tel|ftp):/i;
 const BARE_DOMAIN_RE = /^[\w-]+(\.[\w-]+)+(\/\S*)?$/;
@@ -62,7 +63,7 @@ export const linkFromClipboard = $prose((ctx) => {
       handleKeyDown: (view, event) => {
         const mod = event.ctrlKey || event.metaKey;
         if (!mod || event.altKey || event.shiftKey) return false;
-        if (event.key.toLowerCase() !== "k") return false;
+        if (eventKey(event).toLowerCase() !== "k") return false;
         if (view.state.selection.empty) return false;
         event.preventDefault();
         void navigator.clipboard

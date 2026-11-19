@@ -242,9 +242,10 @@ function setDirection(dir: "ltr" | "rtl"): void {
 /** Guess a document's writing direction from its first strong-directional
  *  character (the Unicode bidi "first strong" heuristic). Cheap: stops at the
  *  first letter and only scans the head of the document. */
-// Hebrew + Arabic (base, supplement, extended-A, presentation forms A/B).
+// Hebrew + Arabic (base, supplement, extended-A, presentation forms A/B). The range
+// stops at U+FEFE: U+FEFF is the BOM / zero-width no-break space, not a letter.
 const RTL_CHAR =
-  /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFB4F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFB4F\uFB50-\uFDFF\uFE70-\uFEFE]/;
 // Latin + Latin-1/Extended + Greek + Cyrillic.
 const LTR_CHAR = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]/;
 function detectDirection(text: string): "ltr" | "rtl" {

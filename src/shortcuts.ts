@@ -90,11 +90,25 @@ function isMac(): boolean {
 
 const F_KEY = /^F\d{1,2}$/;
 
+/** The key value of an event. On a non-Latin layout (Cyrillic, Greek, Hebrew…)
+ *  `key` is a letter such as "ы", which would never match "S"; there the physical
+ *  key (`code`) decides, so Ctrl+S works wherever the S key sits. Latin layouts
+ *  (QWERTZ, AZERTY, Dvorak) keep using `key`, as their letters are meaningful. */
+export function eventKey(e: KeyboardEvent): string {
+  if (e.key.length === 1 && e.key.charCodeAt(0) > 127) {
+    const m = /^(?:Key([A-Z])|Digit(\d))$/.exec(e.code);
+    if (m) return (m[1] || m[2]).toLowerCase();
+    if (e.code === "Period") return ".";
+    if (e.code === "Comma") return ",";
+  }
+  return e.key;
+}
+
 /** Turn one key press into a canonical binding, or null for a bare modifier. */
 export function shortcutFromEvent(e: KeyboardEvent): string | null {
   // AltGr (reported as Ctrl+Alt on Windows) is for typing characters.
   if (e.getModifierState?.("AltGraph")) return null;
-  const key = keyName(e.key);
+  const key = keyName(eventKey(e));
   if (!key) return null;
   return canonical({
     mod: e.ctrlKey || e.metaKey,
@@ -126,7 +140,7 @@ export function findShortcutAction(
   shortcuts: ShortcutSettings,
 ): ShortcutAction | null {
   if (!(e.ctrlKey || e.metaKey || e.altKey) && !F_KEY.test(e.key)) return null;
-  const key = keyName(e.key);
+  const key = keyName(eventKey(e));
   if (!key) return null;
   const mod = e.ctrlKey || e.metaKey;
   for (const action of Object.keys(shortcuts) as ShortcutAction[]) {
